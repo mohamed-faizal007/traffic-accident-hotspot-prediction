@@ -1,0 +1,4 @@
+model,roc_auc,best_threshold,precision,recall,f1_score
+Logistic Regression,0.7769,0.6,0.2031,0.2368,0.2187
+Random Forest,0.7886,0.9,0.2337,0.2261,0.2298
+Advanced Random Forest,0.8508,0.9,0.2667,0.2577,0.2621

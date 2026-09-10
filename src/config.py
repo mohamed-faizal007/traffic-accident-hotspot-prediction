@@ -18,6 +18,11 @@ MODELS_DIR = PROJECT_ROOT / "models"
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 FIGURES_DIR = OUTPUTS_DIR / "figures"
 MAPS_DIR = OUTPUTS_DIR / "maps"
+# ============================================================
+# EDA OUTPUT PATHS
+# ============================================================
+
+EDA_FIGURES_DIR = FIGURES_DIR / "eda"
 
 
 # ============================================================
