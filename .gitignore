@@ -11,9 +11,9 @@ __pycache__/
 .ipynb_checkpoints/
 
 # Data
-data/raw/*.csv
-data/interim/*.csv
-data/processed/*.csv
+data/raw/
+data/interim/
+data/processed/
 
 # Models
 models/*.joblib
