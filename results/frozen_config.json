@@ -1,0 +1,164 @@
+{
+  "status": "frozen",
+  "frozen_at_utc": "2026-09-21T15:49:35+00:00",
+  "rule_written_at_utc": "2026-09-21T15:35:53+00:00",
+  "selection_rule": {
+    "candidates": [
+      "logistic_regression",
+      "hist_gradient_boosting",
+      "random_forest"
+    ],
+    "simplicity_order_simplest_first": [
+      "logistic_regression",
+      "hist_gradient_boosting",
+      "random_forest"
+    ],
+    "tuning_data": "train on targets <= 2023-12; hyper-parameters chosen by validation (2024 targets) average precision only",
+    "step_1": "tune each candidate family on validation AP; take its best configuration",
+    "step_2": "rank the three tuned candidates by validation AP",
+    "step_3": "if the top two are within bootstrap noise (95% grid-bootstrap CI of their validation AP difference includes 0, 300 resamples), choose the simpler of the two by simplicity_order; otherwise choose the higher-AP model",
+    "cluster_features": "excluded (validation ablation, see metrics.json validation.cluster_ablation)",
+    "test_set_policy": "2025 is evaluated exactly once, after this file is completed with the frozen model, calibrator, threshold and feature list; never re-run"
+  },
+  "selection_rule_sha256": "0129c833720dd0ef4751021236a3d69418a2c3af1fa5984fde3f172ef5cb7e16",
+  "selection_outcome": {
+    "ranking_by_val_ap": [
+      [
+        "random_forest",
+        0.25121235139396697
+      ],
+      [
+        "hist_gradient_boosting",
+        0.2498869759285054
+      ],
+      [
+        "logistic_regression",
+        0.24921749472307192
+      ]
+    ],
+    "top_two": [
+      "random_forest",
+      "hist_gradient_boosting"
+    ],
+    "top_two_ap_diff": {
+      "point_diff": 0.0013253754654615757,
+      "ci95": [
+        -0.00048646986209505973,
+        0.0029036876622298854
+      ],
+      "n_bootstrap": 300
+    },
+    "within_noise": true,
+    "chosen": "hist_gradient_boosting",
+    "reason": "top two within bootstrap noise; chose the simpler"
+  },
+  "model": {
+    "family": "hist_gradient_boosting",
+    "params": {
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 8,
+      "min_samples_leaf": 50
+    },
+    "training": "targets <= 2023-12, all positives + negatives sampled 1:4 (seed 42)",
+    "file": "models/final_model.joblib"
+  },
+  "features": [
+    "grid_latitude",
+    "grid_longitude",
+    "month_sin",
+    "month_cos",
+    "collisions_lag_0",
+    "collisions_lag_1",
+    "collisions_lag_2",
+    "casualties_lag_0",
+    "collisions_rolling_sum_3",
+    "historical_total_collisions",
+    "historical_avg_collisions",
+    "historical_max_collisions",
+    "historical_collision_frequency",
+    "historical_hotspot_frequency",
+    "collisions_last_6_months",
+    "collisions_last_12_months",
+    "months_since_last_collision"
+  ],
+  "cluster_features_used": false,
+  "calibration": {
+    "kind": "platt",
+    "fit_on": "all 2024 target months",
+    "file": "models/calibrator.joblib"
+  },
+  "decision_threshold": {
+    "raw_score": 0.6289200034626967,
+    "calibrated_probability": 0.14774946108836925,
+    "chosen_by": "max F1 on 2024 validation targets"
+  },
+  "risk_tiers": {
+    "type": "rank-based within each month (share of grids)",
+    "fractions": {
+      "Critical": 0.01,
+      "High": 0.05,
+      "Medium": 0.1
+    }
+  },
+  "split": {
+    "train_targets": "<= 2023-12",
+    "validation_targets": "2024",
+    "test_targets": "2025"
+  },
+  "hashes_sha256": {
+    "models/final_model.joblib": "ca31011d96d1a24042e128397bab107d2e8f9fc41bbae3228dc18c4ea0da0a09",
+    "models/calibrator.joblib": "11e40cf6b326c963af380471f52cede91b9ce561cf0c86c78db3532580ab62cb",
+    "data/processed/ml_features.parquet": "074f75acb9061e5ca8474123beb556406c5b7f55ff311b7a24db0b7fceb17983",
+    "metrics.validation": "7c9d9357a52e9ca352b5ce8d55b70527c248ac6048296868c90380c5e71776a0"
+  },
+  "git_head": "bba3c76c4df97453427e5328965b9f25c6634ded",
+  "git_dirty_files": [
+    "M .gitignore",
+    " M app.py",
+    " M info.md",
+    "R  src/advanced_feature_engineering.py -> legacy/advanced_feature_engineering.py",
+    "R  src/advanced_random_forest.py -> legacy/advanced_random_forest.py",
+    "R  src/advanced_threshold_optimization.py -> legacy/advanced_threshold_optimization.py",
+    "R  src/final_model_comparison.py -> legacy/final_model_comparison.py",
+    "R  src/final_predictions.py -> legacy/final_predictions.py",
+    "R  src/hotspot_map.py -> legacy/hotspot_map.py",
+    "R  src/model_evaluation_visualizations.py -> legacy/model_evaluation_visualizations.py",
+    "R  src/model_training.py -> legacy/model_training.py",
+    "R  src/random_forest_model.py -> legacy/random_forest_model.py",
+    "R  src/threshold_optimization.py -> legacy/threshold_optimization.py",
+    "D  outputs/accident_hotspot_risk_map.html",
+    "D  outputs/advanced_threshold_optimization_results.csv",
+    "D  outputs/dbscan_parameter_results.csv",
+    "D  outputs/final_hotspot_predictions.csv",
+    "D  outputs/final_model_comparison.csv",
+    "D  outputs/threshold_optimization_results.csv",
+    "D  outputs/visualizations/confusion_matrix.png",
+    "D  outputs/visualizations/feature_importance.csv",
+    "D  outputs/visualizations/feature_importance.png",
+    "D  outputs/visualizations/model_comparison.csv",
+    "D  outputs/visualizations/model_comparison_f1.png",
+    "D  outputs/visualizations/model_comparison_roc_auc.png",
+    "D  outputs/visualizations/precision_recall_curve.png",
+    "D  outputs/visualizations/roc_curve.png",
+    " M requirements.txt",
+    "R  src/_init_.py -> src/__init__.py",
+    " M src/config.py",
+    " M src/data_ingestion.py",
+    " M src/feature_engineering.py",
+    " M src/hotspot_detection.py",
+    " M src/spatial_grid.py",
+    " M src/temporal_dataset.py",
+    "?? legacy/README.md",
+    "?? results/",
+    "?? run_pipeline.py",
+    "?? src/evaluate_test.py",
+    "?? src/evaluation.py",
+    "?? src/features.py",
+    "?? src/freeze_config.py",
+    "?? src/splits.py",
+    "?? src/train_validate.py",
+    "?? src/validation_comparison.py",
+    "?? tests/"
+  ],
+  "config_sha256": "a25a322cd89ce946c135e5da20378d57046488ec794403c3721017cd305f4967"
+}

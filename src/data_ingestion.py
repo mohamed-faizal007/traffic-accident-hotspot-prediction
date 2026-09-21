@@ -1,8 +1,8 @@
-from pathlib import Path
+from config import RAW_COLLISIONS_PATH
 import pandas as pd
 
 
-RAW_DATA_PATH = Path("data/raw/collisions_raw.csv")
+RAW_DATA_PATH = RAW_COLLISIONS_PATH
 
 
 def load_raw_data():

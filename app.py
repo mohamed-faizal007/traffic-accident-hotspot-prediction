@@ -1,828 +1,279 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-import pydeck as pdk
+"""Streamlit dashboard. Every number shown is read from results/metrics.json or from the saved
+prediction files; nothing is hard-coded. Run:  streamlit run app.py
+"""
+
+import json
 from pathlib import Path
 
-
-# ============================================================
-# PAGE CONFIGURATION
-# ============================================================
-
-st.set_page_config(
-    page_title="Traffic Accident Hotspot Prediction",
-    page_icon="🚦",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-
-# ============================================================
-# CUSTOM CSS
-# ============================================================
-
-st.markdown("""
-<style>
-.stApp {
-background-color: #0E1117;
-color: #F5F7FA;
-}
-section[data-testid="stSidebar"] {
-background-color: #171C28;
-}
-section[data-testid="stSidebar"] * {
-color: #E8EDF5;
-}
-.block-container {
-padding-top: 2rem;
-padding-bottom: 3rem;
-max-width: 1400px;
-}
-.hero-container {
-background: linear-gradient(135deg, rgba(22, 32, 52, 0.98), rgba(17, 25, 40, 0.98));
-border: 1px solid #2C3B55;
-border-radius: 22px;
-padding: 55px 60px;
-margin-bottom: 35px;
-position: relative;
-overflow: hidden;
-}
-.hero-container::before {
-content: "";
-position: absolute;
-width: 400px;
-height: 400px;
-background: radial-gradient(circle, rgba(0, 210, 255, 0.12), transparent 70%);
-top: -200px;
-right: -100px;
-}
-.hero-badge {
-display: inline-block;
-padding: 9px 16px;
-border-radius: 30px;
-background-color: rgba(0, 210, 255, 0.10);
-border: 1px solid rgba(0, 210, 255, 0.35);
-color: #67D8FF;
-font-size: 13px;
-font-weight: 600;
-letter-spacing: 1px;
-margin-bottom: 25px;
-}
-.hero-title {
-font-size: 52px;
-font-weight: 800;
-line-height: 1.15;
-color: #F5F7FA;
-margin-bottom: 22px;
-}
-.hero-highlight {
-color: #38BDF8;
-}
-.hero-subtitle {
-font-size: 18px;
-line-height: 1.8;
-color: #AAB7C7;
-max-width: 780px;
-}
-.section-title {
-font-size: 30px;
-font-weight: 750;
-margin-top: 25px;
-margin-bottom: 25px;
-color: #F5F7FA;
-}
-.section-subtitle {
-color: #9AA8B8;
-font-size: 16px;
-margin-top: -10px;
-margin-bottom: 25px;
-}
-.stat-card {
-background-color: #171E2B;
-border: 1px solid #2A364A;
-border-radius: 18px;
-padding: 28px 20px;
-text-align: center;
-height: 165px;
-display: flex;
-flex-direction: column;
-justify-content: center;
-transition: 0.2s;
-}
-.stat-number {
-font-size: 32px;
-font-weight: 800;
-color: #4FC3F7;
-margin-bottom: 10px;
-}
-.stat-label {
-color: #AAB7C7;
-font-size: 14px;
-line-height: 1.5;
-}
-.feature-card {
-background-color: #171E2B;
-border: 1px solid #2A364A;
-border-radius: 18px;
-padding: 30px;
-min-height: 260px;
-}
-.feature-icon {
-font-size: 34px;
-margin-bottom: 18px;
-}
-.feature-title {
-font-size: 21px;
-font-weight: 700;
-color: #F5F7FA;
-margin-bottom: 15px;
-}
-.feature-text {
-color: #AAB7C7;
-line-height: 1.7;
-font-size: 15px;
-}
-.feature-tag {
-margin-top: 18px;
-color: #67D8FF;
-font-size: 13px;
-font-weight: 600;
-}
-.info-card {
-background-color: #171E2B;
-border: 1px solid #2A364A;
-border-radius: 18px;
-padding: 35px;
-min-height: 290px;
-}
-.info-title {
-font-size: 22px;
-font-weight: 700;
-margin-bottom: 20px;
-color: #F5F7FA;
-}
-.info-text {
-color: #AAB7C7;
-font-size: 15px;
-line-height: 1.8;
-}
-.pipeline-card {
-background-color: #171E2B;
-border: 1px solid #2A364A;
-border-radius: 18px;
-padding: 28px 15px;
-text-align: center;
-min-height: 190px;
-}
-.pipeline-icon {
-font-size: 36px;
-margin-bottom: 18px;
-}
-.pipeline-title {
-font-size: 16px;
-font-weight: 650;
-color: #F5F7FA;
-line-height: 1.5;
-}
-.model-card {
-background: linear-gradient(135deg, rgba(22, 55, 45, 0.85), rgba(17, 30, 40, 0.95));
-border: 1px solid #315D4D;
-border-radius: 22px;
-padding: 42px;
-margin-top: 20px;
-}
-.model-title {
-font-size: 28px;
-font-weight: 750;
-color: #8FE3B1;
-margin-bottom: 15px;
-}
-.model-text {
-color: #C5D5CC;
-font-size: 16px;
-line-height: 1.8;
-max-width: 750px;
-}
-.model-metric {
-background-color: rgba(255,255,255,0.05);
-border-radius: 15px;
-padding: 20px;
-text-align: center;
-}
-.model-metric-number {
-font-size: 27px;
-font-weight: 800;
-color: #8FE3B1;
-}
-.model-metric-label {
-font-size: 13px;
-color: #B7C7BE;
-margin-top: 8px;
-}
-.home-footer {
-text-align: center;
-color: #7F8C9C;
-margin-top: 50px;
-padding: 30px;
-border-top: 1px solid #273244;
-}
-div[data-testid="stMetric"] {
-background-color: #171E2B;
-border: 1px solid #2A364A;
-padding: 18px;
-border-radius: 14px;
-}
-div[data-testid="stDataFrame"] {
-border-radius: 12px;
-overflow: hidden;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# ============================================================
-# FILE PATHS
-# ============================================================
+import pandas as pd
+import pydeck as pdk
+import streamlit as st
 
 BASE_DIR = Path(__file__).resolve().parent
-PREDICTIONS_PATH = BASE_DIR / "outputs" / "final_hotspot_predictions.csv"
-VISUALIZATION_DIR = BASE_DIR / "outputs" / "visualizations"
-FEATURE_IMPORTANCE_PATH = VISUALIZATION_DIR / "feature_importance.csv"
-MODEL_COMPARISON_PATH = VISUALIZATION_DIR / "model_comparison.csv"
+METRICS_PATH = BASE_DIR / "results" / "metrics.json"
+FROZEN_PATH = BASE_DIR / "results" / "frozen_config.json"
+IMPORTANCE_PATH = BASE_DIR / "results" / "feature_importance.csv"
+FIGURES_DIR = BASE_DIR / "results" / "figures"
+FORECAST_PATH = BASE_DIR / "outputs" / "forecast_2026-01.csv"
+TEST_PRED_PATH = BASE_DIR / "outputs" / "test_predictions_2025.parquet"
+
+TIER_ORDER = ["Critical", "High", "Medium", "Low"]
+TIER_COLOURS = {"Critical": [200, 30, 45], "High": [240, 120, 20], "Medium": [235, 190, 30], "Low": [90, 160, 110]}
+MODEL_NAMES = {"random_forest": "Random forest", "logistic_regression": "Logistic regression",
+               "hist_gradient_boosting": "Histogram gradient boosting",
+               "persistence": "Baseline: last month >= 2 (persistence)",
+               "trailing_12_month_count": "Baseline: trailing 12-month count"}
+
+st.set_page_config(page_title="Traffic Accident Hotspot Prediction", page_icon="🚦", layout="wide")
 
 
-# ============================================================
-# LOAD DATA
-# ============================================================
+# ------------------------------------------------------------------ loading
+@st.cache_data
+def load_json(path, mtime):
+    return json.loads(Path(path).read_text()) if Path(path).exists() else None
+
 
 @st.cache_data
-def load_predictions():
-    if PREDICTIONS_PATH.exists():
-        return pd.read_csv(PREDICTIONS_PATH)
-    return pd.DataFrame()
+def load_csv(path, mtime):
+    return pd.read_csv(path) if Path(path).exists() else None
 
 
 @st.cache_data
-def load_feature_importance():
-    if FEATURE_IMPORTANCE_PATH.exists():
-        return pd.read_csv(FEATURE_IMPORTANCE_PATH)
-    return pd.DataFrame()
+def load_parquet(path, mtime):
+    return pd.read_parquet(path) if Path(path).exists() else None
 
 
-@st.cache_data
-def load_model_comparison():
-    if MODEL_COMPARISON_PATH.exists():
-        return pd.read_csv(MODEL_COMPARISON_PATH)
-    return pd.DataFrame()
+def mtime(path):
+    return Path(path).stat().st_mtime if Path(path).exists() else 0
 
 
-predictions_df = load_predictions()
-feature_importance_df = load_feature_importance()
-model_comparison_df = load_model_comparison()
+metrics = load_json(METRICS_PATH, mtime(METRICS_PATH))
+frozen = load_json(FROZEN_PATH, mtime(FROZEN_PATH))
+if metrics is None:
+    st.error("results/metrics.json not found. Run the pipeline first (see README).")
+    st.stop()
+
+test, val, sel = metrics.get("test"), metrics["validation"], metrics["selection"]
+family = MODEL_NAMES.get(sel["model_family"], sel["model_family"])
+fractions = sel["tier_top_fractions"]
+split_label = "2025 test" if test else "2024 validation"
 
 
-# ============================================================
-# SIDEBAR
-# ============================================================
+def pct(x, digits=1):
+    return f"{100 * x:.{digits}f}%"
 
+
+def headline():
+    """(label, raw-score block, baselines block) for the split we can show."""
+    if test:
+        return "2025 test (evaluated once, frozen)", test["score_raw"], test["baselines"]
+    return "2024 validation (test not yet run)", val["chosen_model_raw_score"], val["baselines"]
+
+
+# ------------------------------------------------------------------ sidebar
 with st.sidebar:
-    st.markdown("# 🚦 Navigation")
-    st.caption("Traffic Accident Hotspot Prediction")
-    st.markdown("###")
-
-    page = st.radio(
-        "Select Dashboard Page",
-        [
-            "🏠 Home",
-            "📍 Hotspot Predictions",
-            "🗺️ Risk Map",
-            "📊 Model Performance",
-            "📈 Feature Importance"
-        ]
-    )
-
+    st.title("🚦 Hotspot Prediction")
+    page = st.radio("Page", ["Home", "Hotspot Predictions", "Risk Map", "Model Performance", "Feature Importance"])
     st.markdown("---")
-    st.markdown("### 🎯 Final Model")
-    st.markdown("**Advanced Random Forest**")
-    st.markdown("")
-    st.markdown("**ROC-AUC:** 0.8508")
-    st.markdown("")
-    st.markdown("**F1 Score:** 0.2621")
-    st.markdown("")
-    st.markdown("**Threshold:** 0.90")
-    st.markdown("---")
-    st.caption("Spatio-Temporal Machine Learning System")
+    st.markdown(f"**Model:** {family}")
+    st.markdown(f"**Task:** will a 500 m grid cell have ≥ 2 collisions next month?")
+    if frozen and frozen.get("status") == "frozen":
+        st.caption(f"Frozen config {frozen['config_sha256'][:10]}, frozen {frozen['frozen_at_utc'][:10]}")
+    st.caption("Numbers on this dashboard are read from results/metrics.json.")
+    if not test:
+        st.warning("The 2025 test set has not been evaluated yet; showing 2024 validation results.")
 
 
-# ============================================================
-# HOME PAGE
-# ============================================================
-
-if page == "🏠 Home":
-
-    # --------------------------------------------------------
-    # HERO SECTION
-    # --------------------------------------------------------
-
-    hero_html = """
-<div class="hero-container">
-<div class="hero-badge">🚦 SPATIO-TEMPORAL MACHINE LEARNING SYSTEM</div>
-<div class="hero-title">Predict Accident Hotspots<br><span class="hero-highlight">Before They Happen</span></div>
-<div class="hero-subtitle">An intelligent traffic accident prediction system that analyzes historical collision patterns, geographical locations, temporal behaviour, and advanced machine learning features to identify areas at risk of becoming future accident hotspots.</div>
-</div>
-"""
-    st.markdown(hero_html, unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # SYSTEM AT A GLANCE
-    # --------------------------------------------------------
-
-    st.markdown('<div class="section-title">📊 System at a Glance</div>', unsafe_allow_html=True)
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.markdown(
-            '<div class="stat-card"><div class="stat-number">49,505</div>'
-            '<div class="stat-label">Spatial Grids<br>Analyzed</div></div>',
-            unsafe_allow_html=True
-        )
-
-    with col2:
-        st.markdown(
-            '<div class="stat-card"><div class="stat-number">5 Years</div>'
-            '<div class="stat-label">Historical Collision<br>Data</div></div>',
-            unsafe_allow_html=True
-        )
-
-    with col3:
-        st.markdown(
-            '<div class="stat-card"><div class="stat-number">0.8508</div>'
-            '<div class="stat-label">Final<br>ROC-AUC Score</div></div>',
-            unsafe_allow_html=True
-        )
-
-    with col4:
-        st.markdown(
-            '<div class="stat-card"><div class="stat-number">22</div>'
-            '<div class="stat-label">Advanced Predictive<br>Features</div></div>',
-            unsafe_allow_html=True
-        )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # WHAT DOES THE SYSTEM DO
-    # --------------------------------------------------------
-
-    st.markdown('<div class="section-title">⚡ What Does the System Do?</div>', unsafe_allow_html=True)
-
-    feature_col1, feature_col2, feature_col3 = st.columns(3)
-
-    with feature_col1:
-        st.markdown(
-            '<div class="feature-card">'
-            '<div class="feature-icon">📍</div>'
-            '<div class="feature-title">Analyze Location</div>'
-            '<div class="feature-text">The geographical region is divided into spatial grids '
-            'to identify locations where traffic accidents repeatedly occur.</div>'
-            '<div class="feature-tag">Spatial Analysis → Grid-Based Accident Patterns</div>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-    with feature_col2:
-        st.markdown(
-            '<div class="feature-card">'
-            '<div class="feature-icon">📅</div>'
-            '<div class="feature-title">Learn Patterns</div>'
-            '<div class="feature-text">Historical accident activity is analyzed over time using '
-            'lag features, rolling patterns, collision frequency, and recency information.</div>'
-            '<div class="feature-tag">Temporal Analysis → Monthly Prediction Patterns</div>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-    with feature_col3:
-        st.markdown(
-            '<div class="feature-card">'
-            '<div class="feature-icon">🤖</div>'
-            '<div class="feature-title">Predict Risk</div>'
-            '<div class="feature-text">The Advanced Random Forest model estimates the probability '
-            'that a location will become a traffic accident hotspot.</div>'
-            '<div class="feature-tag">Decision Threshold → Probability ≥ 0.90</div>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # PROJECT PURPOSE
-    # --------------------------------------------------------
-
-    st.markdown('<div class="section-title">🎯 Why This Project Matters</div>', unsafe_allow_html=True)
-
-    info_col1, info_col2 = st.columns(2)
-
-    with info_col1:
-        st.markdown(
-            '<div class="info-card">'
-            '<div class="info-title">🚨 The Challenge</div>'
-            '<div class="info-text">'
-            'Traffic accidents often occur repeatedly in particular geographical locations.<br><br>'
-            'Identifying these high-risk areas from millions of historical records manually is '
-            'difficult and time-consuming.<br><br>'
-            'Accident patterns also change over time, making simple historical analysis '
-            'insufficient for proactive planning.'
-            '</div></div>',
-            unsafe_allow_html=True
-        )
-
-    with info_col2:
-        st.markdown(
-            '<div class="info-card">'
-            '<div class="info-title">🎯 Our Objective</div>'
-            '<div class="info-text">'
-            'Predict whether a spatial grid location is likely to become a traffic accident '
-            'hotspot in the following month.<br><br>'
-            'The goal is to support proactive road safety planning and help identify locations '
-            'requiring greater attention.<br><br>'
-            'The system combines spatial, temporal, and historical accident patterns for prediction.'
-            '</div></div>',
-            unsafe_allow_html=True
-        )
-
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # PIPELINE
-    # --------------------------------------------------------
-
-    st.markdown('<div class="section-title">🔄 How the System Works</div>', unsafe_allow_html=True)
-
-    pipeline_col1, pipeline_col2, pipeline_col3, pipeline_col4 = st.columns(4)
-
-    with pipeline_col1:
-        st.markdown(
-            '<div class="pipeline-card"><div class="pipeline-icon">📂</div>'
-            '<div class="pipeline-title">Historical<br>Collision Data</div></div>',
-            unsafe_allow_html=True
-        )
-
-    with pipeline_col2:
-        st.markdown(
-            '<div class="pipeline-card"><div class="pipeline-icon">⚙️</div>'
-            '<div class="pipeline-title">Spatial + Temporal<br>Feature Engineering</div></div>',
-            unsafe_allow_html=True
-        )
-
-    with pipeline_col3:
-        st.markdown(
-            '<div class="pipeline-card"><div class="pipeline-icon">🤖</div>'
-            '<div class="pipeline-title">Advanced Random<br>Forest Model</div></div>',
-            unsafe_allow_html=True
-        )
-
-    with pipeline_col4:
-        st.markdown(
-            '<div class="pipeline-card"><div class="pipeline-icon">🗺️</div>'
-            '<div class="pipeline-title">Hotspot Risk<br>Prediction</div></div>',
-            unsafe_allow_html=True
-        )
-
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # FINAL MODEL
-    # --------------------------------------------------------
-
-    st.markdown('<div class="section-title">🏆 Final Selected Model</div>', unsafe_allow_html=True)
-
-    st.markdown(
-        '<div class="model-card">'
-        '<div class="model-title">🤖 Advanced Random Forest</div>'
-        '<div class="model-text">'
-        'Selected as the final model after comparing Logistic Regression, Random Forest, and '
-        'Advanced Random Forest.<br><br>'
-        'The final model demonstrated the strongest overall predictive discrimination and achieved '
-        'the highest F1 Score among the evaluated models.'
-        '</div></div>',
-        unsafe_allow_html=True
-    )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    metric1, metric2, metric3 = st.columns(3)
-
-    with metric1:
-        st.markdown(
-            '<div class="model-metric"><div class="model-metric-number">0.8508</div>'
-            '<div class="model-metric-label">ROC-AUC SCORE</div></div>',
-            unsafe_allow_html=True
-        )
-
-    with metric2:
-        st.markdown(
-            '<div class="model-metric"><div class="model-metric-number">0.2621</div>'
-            '<div class="model-metric-label">F1 SCORE</div></div>',
-            unsafe_allow_html=True
-        )
-
-    with metric3:
-        st.markdown(
-            '<div class="model-metric"><div class="model-metric-number">0.90</div>'
-            '<div class="model-metric-label">DECISION THRESHOLD</div></div>',
-            unsafe_allow_html=True
-        )
-
-    # --------------------------------------------------------
-    # FOOTER
-    # --------------------------------------------------------
-
-    st.markdown(
-        '<div class="home-footer">'
-        '🚀 Explore the system using the navigation panel.<br><br>'
-        'View predicted accident hotspots, explore geographical risk patterns, '
-        'compare model performance, and analyze the most important predictive features.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-# ============================================================
-# HOTSPOT PREDICTIONS PAGE
-# ============================================================
-
-elif page == "📍 Hotspot Predictions":
-
-    st.title("📍 Hotspot Predictions")
+# --------------------------------------------------------------------- home
+if page == "Home":
+    st.title("Spatio-temporal traffic accident hotspot prediction")
     st.write(
-        "Explore locations predicted as traffic accident hotspots "
-        "using the final Advanced Random Forest model."
+        "UK road-safety collisions 2021-2025 are aggregated to 500 m British National Grid cells and months. "
+        "For each modelled cell the system ranks the risk that the **next month** has at least two collisions. "
+        "DBSCAN is used to define and analyse hotspot structure; the cluster features tested in an ablation "
+        "did **not** improve prediction and are not used in the final model."
     )
-
-    if predictions_df.empty:
-        st.error("Prediction file not found.")
-    else:
-        total_predictions = len(predictions_df)
-
-        if "predicted_hotspot" in predictions_df.columns:
-            predicted_hotspots = predictions_df[predictions_df["predicted_hotspot"] == 1].shape[0]
-        else:
-            predicted_hotspots = 6606
-
-        hotspot_percentage = (predicted_hotspots / total_predictions) * 100
-
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Predictions", f"{total_predictions:,}")
-        col2.metric("Predicted Hotspots", f"{predicted_hotspots:,}")
-        col3.metric("Hotspot Percentage", f"{hotspot_percentage:.2f}%")
-
-        st.markdown("---")
-
-        if "risk_level" in predictions_df.columns:
-            risk_options = sorted(predictions_df["risk_level"].dropna().unique())
-            selected_risk = st.multiselect("Select Risk Levels", options=risk_options, default=risk_options)
-            filtered_df = predictions_df[predictions_df["risk_level"].isin(selected_risk)]
-        else:
-            filtered_df = predictions_df.copy()
-
-        if "year_month" in filtered_df.columns:
-            months = sorted(filtered_df["year_month"].astype(str).unique())
-            selected_month = st.selectbox("Select Prediction Month", ["All Months"] + months)
-            if selected_month != "All Months":
-                filtered_df = filtered_df[filtered_df["year_month"].astype(str) == selected_month]
-
-        st.markdown("### 🔥 Highest Risk Predictions")
-
-        if "prediction_probability" in filtered_df.columns:
-            display_df = filtered_df.sort_values("prediction_probability", ascending=False)
-        else:
-            display_df = filtered_df.copy()
-
-        preferred_columns = [
-            "grid_id", "year_month", "grid_latitude", "grid_longitude",
-            "prediction_probability", "risk_level", "predicted_hotspot"
-        ]
-        available_columns = [col for col in preferred_columns if col in display_df.columns]
-
-        st.dataframe(display_df[available_columns], use_container_width=True, height=600)
-
-
-# ============================================================
-# RISK MAP PAGE
-# ============================================================
-
-elif page == "🗺️ Risk Map":
-
-    st.title("🗺️ Accident Hotspot Risk Map")
-    st.write("Geographical visualization of predicted accident risk locations.")
-
-    if predictions_df.empty:
-        st.error("Prediction file not found.")
-    else:
-        required_columns = ["grid_latitude", "grid_longitude"]
-
-        if not all(col in predictions_df.columns for col in required_columns):
-            st.error("Latitude and longitude columns were not found.")
-        else:
-            map_df = predictions_df.copy()
-
-            if "year_month" in map_df.columns:
-                months = sorted(map_df["year_month"].astype(str).unique())
-                selected_month = st.selectbox("Select Month", months)
-                map_df = map_df[map_df["year_month"].astype(str) == selected_month]
-
-            if "risk_level" in map_df.columns:
-                available_risks = sorted(map_df["risk_level"].dropna().unique())
-                selected_risks = st.multiselect("Select Risk Levels", options=available_risks, default=available_risks)
-                map_df = map_df[map_df["risk_level"].isin(selected_risks)]
-
-            if "risk_level" in map_df.columns:
-                color_map = {
-                    "Low": [80, 180, 100],
-                    "Medium": [255, 193, 7],
-                    "High": [255, 140, 0],
-                    "Critical": [220, 53, 69]
-                }
-                map_df["color"] = map_df["risk_level"].map(color_map)
-                map_df["color"] = map_df["color"].apply(
-                    lambda c: c if isinstance(c, list) else [150, 150, 150]
-                )
-            else:
-                map_df["color"] = [[255, 140, 0]] * len(map_df)
-
-            if len(map_df) > 50000:
-                map_df = map_df.sample(50000, random_state=42)
-
-            view_state = pdk.ViewState(
-                latitude=float(map_df["grid_latitude"].mean()),
-                longitude=float(map_df["grid_longitude"].mean()),
-                zoom=8,
-                pitch=0
-            )
-
-            scatter_layer = pdk.Layer(
-                "ScatterplotLayer",
-                data=map_df,
-                get_position="[grid_longitude, grid_latitude]",
-                get_color="color",
-                get_radius=500,
-                pickable=True,
-                opacity=0.7
-            )
-
-            deck = pdk.Deck(
-                layers=[scatter_layer],
-                initial_view_state=view_state,
-                map_style=None
-            )
-
-            st.pydeck_chart(deck)
-
-            st.info(
-                "Risk Map Legend: "
-                "🟢 Low Risk | 🟡 Medium Risk | 🟠 High Risk | 🔴 Critical Risk"
-            )
-
-
-# ============================================================
-# MODEL PERFORMANCE PAGE
-# ============================================================
-
-elif page == "📊 Model Performance":
-
-    st.title("📊 Model Performance")
-    st.write("Comparison of the machine learning models evaluated for accident hotspot prediction.")
-
-    st.markdown("### 🏆 Final Model Performance")
-
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("ROC-AUC", "0.8508")
-    col2.metric("Precision", "0.2667")
-    col3.metric("Recall", "0.2577")
-    col4.metric("F1 Score", "0.2621")
-
-    st.markdown("---")
-
-    st.markdown("### 🤖 Model Comparison")
-
-    if not model_comparison_df.empty:
-        st.dataframe(model_comparison_df, use_container_width=True)
-
-        columns_lower = {col.lower(): col for col in model_comparison_df.columns}
-
-        model_column = columns_lower.get("model")
-        roc_column = columns_lower.get("roc-auc") or columns_lower.get("roc_auc")
-        f1_column = columns_lower.get("f1 score") or columns_lower.get("f1_score")
-
-        if model_column and roc_column:
-            fig_roc = px.bar(
-                model_comparison_df, x=model_column, y=roc_column,
-                text=roc_column, title="ROC-AUC Comparison"
-            )
-            fig_roc.update_layout(template="plotly_dark", height=450)
-            st.plotly_chart(fig_roc, use_container_width=True)
-
-        if model_column and f1_column:
-            fig_f1 = px.bar(
-                model_comparison_df, x=model_column, y=f1_column,
-                text=f1_column, title="F1 Score Comparison"
-            )
-            fig_f1.update_layout(template="plotly_dark", height=450)
-            st.plotly_chart(fig_f1, use_container_width=True)
-
-    else:
-        fallback_models = pd.DataFrame({
-            "Model": ["Logistic Regression", "Random Forest", "Advanced Random Forest"],
-            "ROC-AUC": [0.7769, 0.7886, 0.8508],
-            "F1 Score": [0.2187, 0.2298, 0.2621]
-        })
-
-        st.dataframe(fallback_models, use_container_width=True)
-
-        fig = px.bar(fallback_models, x="Model", y="ROC-AUC", text="ROC-AUC", title="ROC-AUC Comparison")
-        fig.update_layout(template="plotly_dark")
-        st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("---")
-
-    st.markdown("### 🎯 Final Model Selection")
-
-    st.success(
-        "Advanced Random Forest was selected as the final model because it achieved the "
-        "highest overall F1 Score and strongest ROC-AUC performance among the evaluated models."
-    )
-
-    st.markdown(
-        "**Final Configuration**\n\n"
-        "- Model: Advanced Random Forest\n"
-        "- ROC-AUC: 0.8508\n"
-        "- Precision: 0.2667\n"
-        "- Recall: 0.2577\n"
-        "- F1 Score: 0.2621\n"
-        "- Probability Threshold: 0.90"
-    )
-
-
-# ============================================================
-# FEATURE IMPORTANCE PAGE
-# ============================================================
-
-elif page == "📈 Feature Importance":
-
-    st.title("📈 Feature Importance")
-    st.write("Analysis of the features contributing most to accident hotspot prediction.")
-
-    if feature_importance_df.empty:
-        st.warning("Feature importance file not found. Using known model results.")
-
-        feature_importance_df = pd.DataFrame({
-            "feature": [
-                "historical_avg_collisions",
-                "historical_collision_frequency",
-                "grid_longitude",
-                "collisions_last_12_months",
-                "grid_latitude",
-                "collisions_rolling_6",
-                "historical_total_collisions",
-                "historical_hotspot_frequency",
-                "collisions_last_6_months",
-                "historical_max_collisions"
-            ],
-            "importance": [
-                0.171379, 0.149051, 0.094443, 0.094045, 0.089289,
-                0.077320, 0.057468, 0.049213, 0.035407, 0.031825
-            ]
-        })
-
-    feature_importance_df = feature_importance_df.sort_values("importance", ascending=True)
-
-    fig = px.bar(
-        feature_importance_df, x="importance", y="feature", orientation="h",
-        title="Feature Importance - Advanced Random Forest"
-    )
-    fig.update_layout(template="plotly_dark", height=750, xaxis_title="Importance Score", yaxis_title="Feature")
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("---")
-
-    st.markdown("### 🔍 Most Important Predictive Features")
-
-    top_features = feature_importance_df.sort_values("importance", ascending=False).head(5)
-    st.dataframe(top_features, use_container_width=True)
-
+    label, m, base = headline()
+    st.subheader(label)
+    c = st.columns(4)
+    c[0].metric("Base rate (hotspot cell-months)", pct(m["base_rate"], 2))
+    c[1].metric("Average precision", f"{m['average_precision']:.3f}",
+                f"{m['ap_lift_over_base_rate']:.1f}x base rate", delta_color="off")
+    top1 = m["at_top_k_per_month"]["top_1pct"]
+    c[2].metric("Precision in top 1% each month", pct(top1["precision"]), f"{top1['lift']:.1f}x base rate", delta_color="off")
+    tb = base["trailing_12_month_count"]["at_top_k_per_month"]["top_1pct"]["precision"]
+    c[3].metric("Same, trailing-12-month baseline", pct(tb))
+    ap_gain = m["average_precision"] - base["trailing_12_month_count"]["average_precision"]
     st.info(
-        "The strongest predictive features are primarily related to historical collision "
-        "activity, collision frequency, recent accident patterns, and spatial location. "
-        "This confirms that both historical and spatio-temporal information contribute to "
-        "hotspot prediction."
+        f"Average precision is {m['average_precision']:.3f} versus {base['trailing_12_month_count']['average_precision']:.3f} "
+        f"for simply ranking cells by their collisions in the last 12 months ({ap_gain:+.3f}). "
+        "See Model Performance for confidence intervals and the full comparison."
+    )
+    cov = (test or val)["coverage"]
+    st.warning(
+        f"**Coverage ceiling.** Only cells with ≥ 3 collisions in 2021-2023 are modelled. They contain "
+        f"{pct(cov['coverage'])} of all hotspot cell-months, so system-wide recall cannot exceed that."
+    )
+    st.markdown("**How to read the outputs**")
+    st.markdown(
+        f"- **Risk tier** is rank-based within each month: Critical = top {pct(fractions['Critical'], 0)} of cells, "
+        f"High = next {pct(fractions['High'] - fractions['Critical'], 0)}, "
+        f"Medium = next {pct(fractions['Medium'] - fractions['High'], 0)}, otherwise Low.\n"
+        "- **Score** is the raw model output; it is *not* a probability.\n"
+        f"- **Estimated probability** is the score passed through a {sel['calibration']['chosen']} calibrator fitted on 2024 data."
+    )
+    st.markdown("**Limitations**")
+    st.markdown(
+        "- The model is trained on targets up to 2023-12 only; 2024 is used for calibration and the threshold, so recent data are not in the fit.\n"
+        "- Grids first active after 2023 are not modelled.\n"
+        "- Neighbouring cells are spatially correlated; metrics assume independent cells and understate uncertainty.\n"
+        "- Confidence intervals resample grids only (not years); one test year is a single draw.\n"
+        "- The label is a count rule (≥ 2 collisions), not a causal risk measure; reporting is police-recorded injury collisions only."
     )
 
+# ------------------------------------------------------------- predictions
+elif page == "Hotspot Predictions":
+    st.title("Hotspot forecast")
+    fc = load_csv(FORECAST_PATH, mtime(FORECAST_PATH))
+    if fc is None:
+        st.info("The forecast is written when the 2025 evaluation step runs (src/evaluate_test.py).")
+    else:
+        st.caption(f"Forecast for {fc['target_month'].iloc[0][:7]} from data up to the previous month. "
+                   "Tiers are rank-based; probabilities are calibrated on 2024 data.")
+        tiers = st.multiselect("Risk tiers", TIER_ORDER, default=["Critical", "High"])
+        query = st.text_input("Filter by grid id")
+        shown = fc[fc["risk_tier"].isin(tiers)]
+        if query:
+            shown = shown[shown["grid_id"].astype(str).str.contains(query)]
+        st.write(f"{len(shown):,} of {len(fc):,} modelled cells")
+        table = shown[["rank", "grid_id", "risk_tier", "score", "probability", "grid_latitude", "grid_longitude"]].rename(
+            columns={"score": "score (not a probability)", "probability": "estimated probability"})
+        st.dataframe(table.head(1000), use_container_width=True, hide_index=True)
+        st.download_button("Download filtered forecast (CSV)", shown.to_csv(index=False), "forecast_filtered.csv")
 
-# ============================================================
-# END
-# ============================================================
+# ---------------------------------------------------------------------- map
+elif page == "Risk Map":
+    st.title("Risk map")
+    source = st.radio("Data", ["Forecast (next month)", "2025 retrospective (test predictions)"], horizontal=True)
+    if source.startswith("Forecast"):
+        data = load_csv(FORECAST_PATH, mtime(FORECAST_PATH))
+        if data is not None:
+            data = data.assign(month=data["target_month"].str[:7], actual=None)
+    else:
+        data = load_parquet(TEST_PRED_PATH, mtime(TEST_PRED_PATH))
+        if data is not None:
+            data = data.assign(month=pd.to_datetime(data["target_month"]).dt.strftime("%Y-%m"))
+    if data is None:
+        st.info("Prediction files are written when the 2025 evaluation step runs (src/evaluate_test.py).")
+    else:
+        month = st.selectbox("Target month", sorted(data["month"].unique()))
+        tiers = st.multiselect("Risk tiers", TIER_ORDER, default=["Critical", "High", "Medium"])
+        view = data[(data["month"] == month) & data["risk_tier"].isin(tiers)].copy()
+        if len(view) > 30000:
+            view = view.nlargest(30000, "score")
+            st.warning("Showing the 30,000 highest-scoring cells.")
+        view["colour"] = view["risk_tier"].map(TIER_COLOURS)
+        layers = [pdk.Layer("ScatterplotLayer", data=view, get_position="[grid_longitude, grid_latitude]",
+                            get_fill_color="colour", get_radius=250, pickable=True, opacity=0.75)]
+        if "hotspot" in view and view["hotspot"].notna().any():
+            hits = view[view["hotspot"] == 1]
+            layers.append(pdk.Layer("ScatterplotLayer", data=hits, get_position="[grid_longitude, grid_latitude]",
+                                    get_radius=420, stroked=True, filled=False, get_line_color=[255, 255, 255],
+                                    line_width_min_pixels=2))
+            st.caption(f"White rings mark cells that actually had ≥ 2 collisions ({len(hits):,} shown).")
+        if len(view):
+            state = pdk.ViewState(latitude=float(view["grid_latitude"].mean()), longitude=float(view["grid_longitude"].mean()), zoom=5.5)
+            st.pydeck_chart(pdk.Deck(layers=layers, initial_view_state=state,
+                                     tooltip={"text": "{grid_id}\n{risk_tier}\nscore {score}\nprob {probability}"}))
+        st.caption("Colours: " + ", ".join(f"{t}" for t in TIER_ORDER) + " (red to green). Tiers are rank-based within the month.")
+
+# ------------------------------------------------------------------ metrics
+elif page == "Model Performance":
+    st.title("Model performance")
+    label, m, base = headline()
+    st.subheader(label)
+    rows = []
+    for name, r in [(family + " (frozen)", m)] + [(MODEL_NAMES[k], v) for k, v in base.items()]:
+        k1, k5 = r["at_top_k_per_month"]["top_1pct"], r["at_top_k_per_month"]["top_5pct"]
+        rows.append({"Method": name, "Avg precision": r["average_precision"], "Lift over base": r["ap_lift_over_base_rate"],
+                     "ROC-AUC (ref.)": r["roc_auc"], "Precision @ top 1%": k1["precision"], "Recall @ top 1%": k1["recall"],
+                     "Precision @ top 5%": k5["precision"], "Recall @ top 5%": k5["recall"]})
+    st.dataframe(pd.DataFrame(rows).style.format(precision=3), use_container_width=True, hide_index=True)
+    st.caption(f"Base rate {pct(m['base_rate'], 2)} on {m['n']:,} cell-months ({m['positives']:,} hotspots). "
+               "Top-k is taken within each month. Recall is on modelled cells.")
+
+    if test:
+        sw = test["system_wide"]
+        cov = test["coverage"]
+        st.markdown("**Recall on modelled cells vs system-wide**")
+        st.write(pd.DataFrame([
+            {"Operating point": "Frozen F1 threshold", "Recall (modelled cells)": sw["recall_on_modelled_grids_at_threshold"],
+             "Recall (system-wide)": sw["recall_system_wide_at_threshold"]},
+            *[{"Operating point": f"Top {k.split('_')[1].replace('pct', '%')} per month",
+               "Recall (modelled cells)": v["recall_on_modelled_grids"], "Recall (system-wide)": v["recall_system_wide"]}
+              for k, v in sw["top_k_per_month"].items()],
+        ]).style.format({"Recall (modelled cells)": "{:.3f}", "Recall (system-wide)": "{:.3f}"}).hide(axis="index").to_html(),
+            unsafe_allow_html=True)
+        st.caption(f"{cov['in_modelled_grids']:,} of {cov['hotspot_grid_months_all_grids']:,} hotspot cell-months "
+                   f"({pct(cov['coverage'])}) lie in modelled cells.")
+
+    cal = (test or val)["score_calibrated" if test else "chosen_model_calibrated"]
+    conf = m["confusion"]
+    left, right = st.columns(2)
+    with left:
+        st.markdown(f"**Confusion matrix at the frozen threshold** (score ≥ {conf['threshold']:.3f}, tuned on 2024)")
+        st.write(pd.DataFrame([[conf["tn"], conf["fp"]], [conf["fn"], conf["tp"]]],
+                              index=["actual: no hotspot", "actual: hotspot"], columns=["predicted: no", "predicted: yes"]))
+        st.caption(f"Precision {conf['precision']:.3f}, recall {conf['recall']:.3f}, F1 {conf['f1']:.3f}; flags {pct(conf['flagged_fraction'])} of cell-months.")
+    with right:
+        st.markdown("**Calibration (Brier score, lower is better)**")
+        st.write(f"Calibrated probabilities: **{cal['brier']:.4f}** vs constant base-rate forecast {cal['brier_base_rate_reference']:.4f}. "
+                 f"Raw scores are not probabilities (mean score is far above the base rate).")
+        rel = FIGURES_DIR / "reliability_val.png"
+        if rel.exists():
+            st.image(str(rel), caption="Validation reliability (calibrator fitted on the same 2024 data, in-sample)")
+
+    st.markdown("**Per-month average precision**")
+    per_month = m["per_month"]
+    st.bar_chart(pd.Series({k: v["average_precision"] for k, v in per_month.items()}, name="average precision"))
+
+    st.subheader("Validation (2024) and model selection")
+    cand = pd.DataFrame([{"Model": MODEL_NAMES[k], "Val AP": v["average_precision"], "Val ROC-AUC": v["roc_auc"],
+                          "Val top-1% precision": v["at_top_k_per_month"]["top_1pct"]["precision"]}
+                         for k, v in val["all_candidates"].items()])
+    st.dataframe(cand.style.format(precision=3), use_container_width=True, hide_index=True)
+    d = sel["decision"]
+    st.write(f"Selection rule (saved before tuning): highest validation AP; if the top two are within bootstrap noise, take the simpler. "
+             f"Outcome: **{MODEL_NAMES[d['chosen']]}** ({d['reason']}). Top-two AP difference "
+             f"{d['top_two_ap_diff']['point_diff']:+.4f}, 95% CI [{d['top_two_ap_diff']['ci95'][0]:+.4f}, {d['top_two_ap_diff']['ci95'][1]:+.4f}].")
+    if "bootstrap" in val:
+        rows = [{"Comparison": k, "AP difference": v["ap"]["point_diff"], "95% CI low": v["ap"]["ci95"][0], "95% CI high": v["ap"]["ci95"][1]}
+                for k, v in val["bootstrap"]["comparisons"].items()]
+        st.markdown("**Validation AP differences (grid bootstrap)**")
+        st.dataframe(pd.DataFrame(rows).style.format(precision=4), use_container_width=True, hide_index=True)
+    if "cluster_ablation" in val:
+        s = val["cluster_ablation"]["summary"]["ap"]
+        st.markdown("**DBSCAN cluster-feature ablation (validation)**")
+        st.write(f"Average precision without cluster features {s['without_cluster_mean']:.4f}, with {s['with_cluster_mean']:.4f} "
+                 f"(difference {s['diff_mean']:+.4f}, mean over seeds). Cluster features are not used in the final model.")
+    if "alignment_ablation" in val:
+        a = val["alignment_ablation"]
+        st.write(f"Feature timing ablation (validation AP): original alignment {a['delay_1']['val_average_precision']:.4f} "
+                 f"vs months ≤ t {a['delay_0']['val_average_precision']:.4f}.")
+    pr = FIGURES_DIR / "test_pr_curve.png"
+    if test and pr.exists():
+        st.image(str(pr), caption="Precision-recall curve, 2025 test")
+    if test:
+        st.caption(f"Test evaluated once at {test['evaluated_at_utc']}; frozen config {test['frozen_config_sha256'][:10]}.")
+
+# --------------------------------------------------------------- importance
+elif page == "Feature Importance":
+    st.title("Feature importance")
+    imp = load_csv(IMPORTANCE_PATH, mtime(IMPORTANCE_PATH))
+    if imp is None:
+        st.info("results/feature_importance.csv not found.")
+    else:
+        st.write("Permutation importance on a 2024 validation sample: the drop in average precision when a feature is shuffled. "
+                 "Correlated features share credit, so small values do not mean a feature is useless.")
+        st.bar_chart(imp.set_index("feature")["importance"])
+        st.dataframe(imp.style.format(precision=4), use_container_width=True, hide_index=True)
