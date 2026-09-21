@@ -1,0 +1,15 @@
+{
+  "fit_period": "2021-01..2023-12",
+  "criterion": "largest cluster <= 5% of clustered points; then maximise clustered fraction",
+  "eps_km": 0.1,
+  "min_samples": 10,
+  "stats": {
+    "clusters": 2161,
+    "clustered_points": 52517,
+    "clustered_fraction": 0.16870330037456072,
+    "largest_cluster_points": 1162,
+    "largest_cluster_share": 0.02212616866919283,
+    "median_cluster_size": 14.0,
+    "p95_cluster_size": 65.0
+  }
+}
