@@ -178,7 +178,7 @@ Random seeds are fixed (`RANDOM_STATE = 42`; multi-seed ablations use seeds 42, 
 
 ```
 git clone <repo-url> && cd <repo>
-git checkout v1-2025-test-evaluated
+git checkout final-audited
 python -m venv venv
 venv\Scripts\activate                      # Windows; on Linux/macOS: source venv/bin/activate
 pip install -r requirements.txt
@@ -193,6 +193,9 @@ preprocessing, grid, monthly table, DBSCAN, features, `train_validate.py`, `vali
 `validation_comparison.py` and `evaluate_test.py` all refuse to run and cannot overwrite the frozen model, `metrics.json` or `frozen_config.json`.
 Re-running the whole pipeline is therefore only possible in a copy without the lock file, and would define a new protocol (a new test evaluation);
 the original 2025 evaluation must not be repeated.
+
+**Git markers:** branch `final-audited` is the audited final state. Tag `v1-2025-test-evaluated` marks the commit that first contains
+`frozen_config.json`, the 2025 test results and the lock file (its dashboard and README are older than the branch tip).
 
 **What is versioned:** all source, tests, `results/` (including `frozen_config.json`, `metrics.json`, `test_evaluated.lock`, figures, tuning tables, `old_run/` outputs),
 `outputs/` (Jan 2026 forecast and 2025 test predictions) and the two small frozen artefacts `models/final_model.joblib` and `models/calibrator.joblib`
