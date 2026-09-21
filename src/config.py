@@ -17,7 +17,6 @@ MODELS_DIR = PROJECT_ROOT / "models"
 
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 FIGURES_DIR = OUTPUTS_DIR / "figures"
-MAPS_DIR = OUTPUTS_DIR / "maps"
 # ============================================================
 # EDA OUTPUT PATHS
 # ============================================================
@@ -105,21 +104,11 @@ UK_LON_MAX = 2
 # ============================================================
 # SPATIAL SETTINGS
 # ============================================================
+# Grid cells are 500 m x 500 m squares in the British National Grid
+# (EPSG:27700). DBSCAN parameters are chosen from training data in
+# hotspot_detection.py (results/dbscan_selection.json), not set here.
 
 GRID_SIZE_METERS = 500
-
-DBSCAN_EPS_METERS = 500
-
-DBSCAN_MIN_SAMPLES = 15
-
-
-# ============================================================
-# TEMPORAL SETTINGS
-# ============================================================
-
-TIME_PERIOD = "M"
-
-TEST_PERIODS = 6
 
 
 # ============================================================
@@ -127,3 +116,36 @@ TEST_PERIODS = 6
 # ============================================================
 
 RANDOM_STATE = 42
+
+
+# ============================================================
+# EVALUATION PROTOCOL (single source of truth)
+# ============================================================
+# Splits are defined by the TARGET month (the month being predicted).
+#   train: target month <= 2023-12
+#   val  : target month in 2024   (threshold, calibration, hyperparameters)
+#   test : target month in 2025   (evaluated once, with a frozen config)
+
+FIRST_MONTH = "2021-01"
+LAST_MONTH = "2025-12"
+TRAIN_END_MONTH = "2023-12"
+VAL_YEAR = 2024
+TEST_YEAR = 2025
+
+# A grid is "active" if it has at least this many collisions in the
+# training period (2021-2023) only.
+ACTIVE_MIN_COLLISIONS = 3
+
+# Target: >= this many collisions in the next month.
+HOTSPOT_MIN_COLLISIONS = 2
+
+# Months at the start of each grid history dropped as feature warm-up.
+WARMUP_MONTHS = 3
+
+# Rank-based risk tiers: share of grids (per month) in each tier.
+TIER_TOP_FRACTIONS = {"Critical": 0.01, "High": 0.05, "Medium": 0.10}
+
+RESULTS_DIR = PROJECT_ROOT / "results"
+METRICS_PATH = RESULTS_DIR / "metrics.json"
+FROZEN_CONFIG_PATH = RESULTS_DIR / "frozen_config.json"
+FEATURES_PATH = PROCESSED_DATA_DIR / "ml_features.parquet"
