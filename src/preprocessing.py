@@ -1,6 +1,7 @@
 import pandas as pd
 
 from config import (
+    ensure_output_dirs,
     RAW_COLLISIONS_PATH,
     CLEAN_COLLISIONS_PATH,
     QUALITY_REPORT_PATH,
@@ -278,6 +279,8 @@ def save_clean_data(df):
 
 def run_preprocessing():
     """Run the complete preprocessing pipeline."""
+
+    ensure_output_dirs()
 
     print("\n")
     print("#" * 60)

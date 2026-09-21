@@ -149,3 +149,9 @@ RESULTS_DIR = PROJECT_ROOT / "results"
 METRICS_PATH = RESULTS_DIR / "metrics.json"
 FROZEN_CONFIG_PATH = RESULTS_DIR / "frozen_config.json"
 FEATURES_PATH = PROCESSED_DATA_DIR / "ml_features.parquet"
+
+
+def ensure_output_dirs(root=PROJECT_ROOT):
+    """Create the git-ignored output folders (a fresh clone has none of them)."""
+    for relative in ("data/raw", "data/interim", "data/processed", "models", "outputs", "results"):
+        (Path(root) / relative).mkdir(parents=True, exist_ok=True)

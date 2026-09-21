@@ -30,7 +30,14 @@ def main():
         sys.exit(f"unknown stage {start!r}; choose from {names}")
     for name, cmd in STAGES[names.index(start):]:
         print(f"\n>>> stage: {name}")
-        subprocess.run([sys.executable, *cmd], cwd=ROOT, check=True)
+        try:
+            subprocess.run([sys.executable, *cmd], cwd=ROOT, check=True)
+        except subprocess.CalledProcessError as error:
+            print(f"\nstage {name} failed (exit {error.returncode})", file=sys.stderr)
+            if name in ("train", "compare") and (ROOT / "results" / "test_evaluated.lock").exists():
+                print("hint: results/test_evaluated.lock exists, so the validation results, models and "
+                      "frozen config are frozen by design and are not overwritten.", file=sys.stderr)
+            sys.exit(error.returncode)
 
 
 if __name__ == "__main__":
