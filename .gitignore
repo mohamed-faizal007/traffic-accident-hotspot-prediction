@@ -28,3 +28,8 @@ Thumbs.db
 
 # VS Code
 .vscode/
+# Run artefacts
+results/*.log
+results/val_scores.parquet
+results/old_run/models/
+.pytest_cache/
