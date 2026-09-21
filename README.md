@@ -3,6 +3,8 @@
 Predict which 500 m grid cells of Great Britain will have **at least two recorded road collisions in the
 next month**, using UK road-safety collisions 2021-2025, spatial clustering (DBSCAN) and machine learning.
 
+DBSCAN clusters define and analyse hotspot structure; as predictors they gave no gain (Key finding 3). Only cells with >= 3 collisions in 2021-2023 are modelled, so recall is capped at 91.7% (Key finding 4).
+
 This README describes only what is implemented. Every number below is copied from `results/metrics.json`
 (the dashboard reads the same file). Numbers from the pre-audit version of the project were produced by a
 protocol that tuned on the test year; they are kept in `results/old_run/` and are **not** comparable.
@@ -15,12 +17,13 @@ protocol that tuned on the test year; they are kept in `results/old_run/` and ar
    The short recent-lag features individually matter little.
 2. **HistGradientBoosting beats the trailing-12-month baseline on average precision: +0.035 (95% grid-bootstrap CI +0.031 to +0.038, excludes zero).**
    Top-5% precision also improves (+0.014, CI +0.010 to +0.019). **Top-1% precision is not distinguishable from the baseline** (+0.016, CI -0.0002 to +0.030).
-3. **Random forest, HistGradientBoosting and logistic regression are practically tied** on 2024 validation (AP 0.2512 / 0.2499 / 0.2492). RF vs HistGradientBoosting: CI includes zero.
+3. **DBSCAN cluster features gave no gain:** validation AP 0.2480 with vs 0.2510 without (-0.0030, worse in 5 of 5 seeds; random-forest ablation, mean over 5 seeds), so they are not in the final model.
+   The chosen 0.1 km / min-10 clusters (2,161) cover only 16.9% of training collisions, unlike the original broad zones. Why they fail is an untested hypothesis.
+4. **Recall ceiling 91.7%** (8,549 of 9,320 hotspot cell-months in 2025 lie in modelled cells) because of the active-grid filter: only cells with >= 3 collisions in 2021-2023 are modelled, which avoids using 2024-2025 information.
+   System-wide recall at the frozen threshold is 0.330, versus 0.360 on modelled cells.
+5. **Random forest, HistGradientBoosting and logistic regression are practically tied** on 2024 validation (AP 0.2512 / 0.2499 / 0.2492). RF vs HistGradientBoosting: CI includes zero.
    RF vs logistic regression: +0.0020, CI only just excludes zero for AP (+0.0003 to +0.0038) and includes zero for top-1% and top-5% precision.
    The rule fixed before tuning therefore picked HistGradientBoosting; a simpler logistic regression would have done about as well.
-4. **DBSCAN cluster features gave no gain** (validation AP -0.0030, worse in 5 of 5 seeds), so they are not in the final model.
-5. **Recall is capped at 91.7%** because only cells with >= 3 collisions in 2021-2023 are modelled (the active-grid filter, which avoids using 2024-2025 information).
-   System-wide recall at the frozen threshold is 0.330.
 
 ## Headline result (2025 test, evaluated once with a frozen configuration)
 
@@ -202,8 +205,11 @@ the original 2025 evaluation must not be repeated.
 (their SHA-256 hashes are in `frozen_config.json`). **Not versioned:** everything under `data/`, superseded pickled models
 (kept locally in `results/old_run/models/`), logs, `results/val_scores.parquet`.
 
-**Verification status:** the pipeline stages were run individually and the test suite and dashboard were run; `run_pipeline.py` itself and a
-from-scratch rebuild on a clean clone have not been executed end to end.
+**Verification status (observed):** a clean-clone test was run: a fresh clone of `final-audited`, a new venv, `pip install -r requirements.txt`, and the raw file placed as above.
+`python run_pipeline.py` first failed in preprocessing because `data/interim/` did not exist (fixed since by `ensure_output_dirs`, verified by a regression test, not by a second clean-clone run).
+After creating that folder by hand in the clone, the preprocess, grid, monthly, dbscan and features stages ran, and the regenerated `ml_features.parquet` was byte-identical to the hash in `frozen_config.json`.
+The train stage was refused by the lock file, as designed, so training, validation and test were **not** re-run. In the clone, 36 tests passed with no data files present, and the dashboard returned HTTP 200.
+Only Windows and Python 3.13.1 were tested.
 
 ## Limitations
 
