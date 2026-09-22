@@ -1,0 +1,68 @@
+@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+
+@theme {
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-bg: #0a0a0a;
+  --color-bg-raised: #111114;
+  --color-card: #15151a;
+  --color-card-hover: #1c1c22;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-gridline: rgba(255, 255, 255, 0.06);
+
+  --color-text-primary: #f2f2f0;
+  --color-text-secondary: #a8a8a4;
+  --color-text-muted: #84847a;
+
+  --color-accent: #4c8dff;
+  --color-accent-amber: #f2b84b;
+
+  --color-tier-critical: #d03b3b;
+  --color-tier-high: #ec835a;
+  --color-tier-medium: #fab219;
+  --color-tier-low: #0ca30c;
+
+  --color-tier-critical-bg: #3a1414;
+  --color-tier-critical-text: #ff8f8f;
+  --color-tier-high-bg: #3a2414;
+  --color-tier-high-text: #ffb680;
+  --color-tier-medium-bg: #3a2f10;
+  --color-tier-medium-text: #ffd166;
+  --color-tier-low-bg: #123314;
+  --color-tier-low-text: #6fe36f;
+
+  --radius-pill: 999px;
+  --radius-card: 16px;
+  --radius-sm: 8px;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Leaflet dark-map container needs an explicit background to avoid a white flash while tiles load */
+.leaflet-container {
+  background: var(--color-bg);
+}
