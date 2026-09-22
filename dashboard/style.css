@@ -1,0 +1,211 @@
+/* Visual theme for the Traffic Accident Hotspot Prediction dashboard.
+   Light surface, slate/navy chrome, status-reserved red/amber/yellow/green for risk tiers only.
+   Palette source: dataviz skill reference palette (status + sequential-blue ramp). */
+
+:root {
+  --surface-0: #f9f9f7;   /* page plane */
+  --surface-1: #ffffff;   /* card surface */
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --border: rgba(11, 11, 11, 0.10);
+  --gridline: #e1e0d9;
+
+  --accent: #1c3d5a;      /* slate navy — chrome / headers */
+  --accent-2: #2a78d6;    /* sequential blue — charts, links */
+
+  --tier-critical: #d03b3b;
+  --tier-high: #ec835a;
+  --tier-medium: #fab219;
+  --tier-low: #0ca30c;
+
+  --tier-critical-bg: #fbe4e4;
+  --tier-high-bg: #fce4d9;
+  --tier-medium-bg: #fef0d3;
+  --tier-low-bg: #e0f5e0;
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(11, 11, 11, 0.06), 0 2px 8px rgba(11, 11, 11, 0.06);
+}
+
+/* ---------------------------------------------------------------- base */
+html, body, [class*="css"] {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.stApp {
+  background: var(--surface-0);
+}
+
+h1, h2, h3 {
+  color: var(--accent);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+[data-testid="stSidebar"] {
+  background: var(--accent);
+}
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] small,
+[data-testid="stSidebar"] h1 {
+  color: #f3f6f9;
+}
+[data-testid="stSidebar"] hr {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+[data-testid="stSidebar"] .sidebar-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #d7e4f2 !important;
+  font-size: 0.76rem;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+}
+
+/* ---------------------------------------------------------- metric cards */
+div[data-testid="stMetric"] {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px 10px 16px;
+}
+div[data-testid="stMetricLabel"] {
+  color: var(--text-secondary);
+}
+div[data-testid="stMetricValue"] {
+  color: var(--accent);
+}
+
+/* --------------------------------------------------------------- cards */
+.hp-hero {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 22px;
+  margin-bottom: 8px;
+}
+.hp-hero h1 {
+  margin: 0 0 4px 0;
+}
+.hp-hero p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 1.02rem;
+}
+.hp-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-0);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+}
+
+.hp-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  margin-bottom: 10px;
+}
+
+.hp-section-title {
+  color: var(--accent);
+  font-weight: 650;
+  font-size: 1.05rem;
+  margin: 4px 0 2px 0;
+}
+
+/* --------------------------------------------------------- tier badges */
+.tier-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tier-Critical { background: var(--tier-critical-bg); color: var(--tier-critical); }
+.tier-High     { background: var(--tier-high-bg);     color: #b5541f; }
+.tier-Medium   { background: var(--tier-medium-bg);   color: #8a6200; }
+.tier-Low      { background: var(--tier-low-bg);      color: #0a7a0a; }
+
+.tier-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.tier-dot.tier-Critical { background: var(--tier-critical); }
+.tier-dot.tier-High     { background: var(--tier-high); }
+.tier-dot.tier-Medium   { background: var(--tier-medium); }
+.tier-dot.tier-Low      { background: var(--tier-low); }
+
+/* -------------------------------------------------------- legend row */
+.tier-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 6px 0 4px 0;
+}
+
+/* ---------------------------------------------------- confusion grid */
+.cm-grid {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.92rem;
+}
+.cm-grid th, .cm-grid td {
+  border: 1px solid var(--gridline);
+  padding: 10px 12px;
+  text-align: center;
+}
+.cm-grid th {
+  background: var(--surface-0);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.cm-grid td.cm-cell {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+.cm-grid td.cm-corner {
+  background: var(--surface-0);
+}
+
+/* ----------------------------------------------------------- tables */
+[data-testid="stDataFrame"] {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+[data-testid="stAlert"] {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+[data-testid="stImage"] img {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+hr {
+  border-color: var(--gridline);
+}
