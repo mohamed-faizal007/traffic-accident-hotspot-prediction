@@ -79,8 +79,9 @@ def confusion_matrix_html(tn: int, fp: int, fn: int, tp: int) -> str:
     total = tn + fp + fn + tp
     cells = {"tn": tn, "fp": fp, "fn": fn, "tp": tp}
     bg = {k: _shade(v, total) for k, v in cells.items()}
-    # Dark ramp steps need light text for contrast; the first two steps stay dark-on-light.
-    fg = {k: ("#ffffff" if v in SEQUENTIAL_BLUE[2:] else "#0b0b0b") for k, v in bg.items()}
+    # Only the two darkest ramp steps clear 4.5:1 with white text; the mid step (#3987e5)
+    # measures ~3.6:1 with white but ~5.5:1 with dark text, so it stays dark-on-light too.
+    fg = {k: ("#ffffff" if v in SEQUENTIAL_BLUE[3:] else "#0b0b0b") for k, v in bg.items()}
     return f"""
     <table class="cm-grid">
       <tr><td class="cm-corner"></td><th>predicted: no</th><th>predicted: yes</th></tr>
