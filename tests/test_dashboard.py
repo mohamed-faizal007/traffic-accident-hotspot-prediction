@@ -9,6 +9,7 @@ pytest.importorskip("streamlit")
 from streamlit.testing.v1 import AppTest
 
 ROOT = Path(__file__).resolve().parent.parent
+APP_PATH = ROOT / "legacy" / "streamlit_dashboard" / "app.py"
 METRICS = json.loads((ROOT / "results" / "metrics.json").read_text())
 PAGES = ["Home", "Hotspot Predictions", "Risk Map", "Model Performance", "Feature Importance"]
 
@@ -16,7 +17,7 @@ needs_outputs = pytest.mark.skipif(METRICS.get("test") is None, reason="2025 out
 
 
 def run_page(page, **radio):
-    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=120).run()
+    at = AppTest.from_file(str(APP_PATH), default_timeout=120).run()
     at.sidebar.radio[0].set_value(page).run()
     for label, value in radio.items():
         next(r for r in at.radio if r.label == label).set_value(value).run()
@@ -70,6 +71,6 @@ def test_map_and_forecast_pages_use_saved_outputs_and_both_map_sources():
 
 def test_no_hardcoded_metrics_in_app_source():
     import re
-    src = (ROOT / "app.py").read_text()
+    src = APP_PATH.read_text()
     numbers = re.findall(r"(?<![\w.])0\.\d{3,}", src)
     assert not numbers, f"hard-coded metric-like numbers in app.py: {numbers}"
