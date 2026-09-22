@@ -87,7 +87,8 @@ raw CSV -> preprocessing -> collisions_clean.csv
         -> validation_comparison (cluster ablation, bootstrap CIs)
         -> freeze_config   (tests must pass; hashes)       -> results/frozen_config.json
         -> evaluate_test   (once; lock file)               -> metrics.json[test], outputs/*
-        -> app.py          (Streamlit; reads metrics.json + outputs)
+        -> web/            (React + FastAPI; reads metrics.json + outputs; primary dashboard)
+        -> legacy/streamlit_dashboard/app.py  (Streamlit; same data; kept as a fallback)
 ```
 
 | Stage | File |
@@ -101,7 +102,7 @@ raw CSV -> preprocessing -> collisions_clean.csv
 | Training / selection | `src/train_validate.py`, `src/validation_comparison.py` |
 | Freeze / test | `src/freeze_config.py`, `src/evaluate_test.py`, `src/test_bootstrap.py` |
 | Tests | `tests/` |
-| Old pipeline | `legacy/` (not used), `results/old_run/` (old outputs) |
+| Old pipeline | `legacy/` (not used, except `legacy/streamlit_dashboard/` - see Dashboard section), `results/old_run/` (old outputs) |
 
 ## Method details
 
@@ -172,12 +173,26 @@ improve prediction and are not used in the final model.**
 
 ## Dashboard
 
-`streamlit run app.py` - pages: Home, Hotspot Predictions (Jan 2026 forecast, filters, CSV download), Risk Map (forecast or 2025 retrospective,
+**Primary interface: `web/`** (React + FastAPI). Five pages - Home, Hotspot Predictions, Risk Map,
+Model Performance, Feature Importance - mirroring the same data as the pipeline's saved outputs.
+Setup and run instructions: [`web/README.md`](web/README.md). Quick start:
+
+```
+cd web/backend && ../../venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000   # terminal 1
+cd web/frontend && npm install && npm run dev                                                    # terminal 2
+```
+
+Then open `http://localhost:5173`.
+
+Pages: Home, Hotspot Predictions (Jan 2026 forecast, filters), Risk Map (forecast or 2025 retrospective,
 tier colours, actual hotspots as rings), Model Performance (test vs baselines, recall on modelled cells and system-wide, confusion matrix, calibration,
 per-month AP, validation, bootstrap CIs, ablations), Feature Importance (permutation importance on validation).
-All numbers come from `results/metrics.json` or saved outputs; `tests/test_dashboard.py` runs every page and checks displayed numbers against `metrics.json`.
-The dashboard says "score" and "risk tier", and "estimated probability" only for calibrated values. The Jan 2026 forecast is produced with
-the frozen model from data through Dec 2025 and has no outcome data, so it is unvalidated.
+All numbers come from `results/metrics.json` or saved outputs; the backend has no model-loading or training code and exposes read-only GET endpoints only.
+
+**Fallback: the original Streamlit dashboard** is retained, unmodified in behaviour, at `legacy/streamlit_dashboard/app.py` (run with
+`streamlit run legacy/streamlit_dashboard/app.py` from the project root). `tests/test_dashboard.py` runs every page and checks displayed
+numbers against `metrics.json`. Both dashboards say "score" and "risk tier", and "estimated probability" only for calibrated values.
+The Jan 2026 forecast is produced with the frozen model from data through Dec 2025 and has no outcome data, so it is unvalidated.
 
 ## Reproducibility
 
@@ -195,7 +210,8 @@ venv\Scripts\activate                      # Windows; on Linux/macOS: source ven
 pip install -r requirements.txt
 # place the raw file (not in git) at data/raw/collisions_raw.csv
 python -m pytest tests -q                   # leakage, split, tier, selection-rule, dashboard tests
-streamlit run app.py                        # reads results/metrics.json and outputs/ (both are in git)
+streamlit run legacy/streamlit_dashboard/app.py   # fallback dashboard; reads results/metrics.json and outputs/ (both are in git)
+# primary dashboard: see web/README.md (FastAPI backend + React frontend)
 ```
 
 To regenerate the intermediate data and validation results from the raw file (`python run_pipeline.py`, or its stages one by one):

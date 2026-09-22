@@ -20,13 +20,16 @@ from dashboard.ui import (
     tier_legend,
 )
 
+# app.py now lives at legacy/streamlit_dashboard/app.py; the dashboard/ package is a sibling
+# (moved with it), but results/ and outputs/ stay at the project root, two levels up.
 BASE_DIR = Path(__file__).resolve().parent
-METRICS_PATH = BASE_DIR / "results" / "metrics.json"
-FROZEN_PATH = BASE_DIR / "results" / "frozen_config.json"
-IMPORTANCE_PATH = BASE_DIR / "results" / "feature_importance.csv"
-FIGURES_DIR = BASE_DIR / "results" / "figures"
-FORECAST_PATH = BASE_DIR / "outputs" / "forecast_2026-01.csv"
-TEST_PRED_PATH = BASE_DIR / "outputs" / "test_predictions_2025.parquet"
+PROJECT_ROOT = BASE_DIR.parents[1]
+METRICS_PATH = PROJECT_ROOT / "results" / "metrics.json"
+FROZEN_PATH = PROJECT_ROOT / "results" / "frozen_config.json"
+IMPORTANCE_PATH = PROJECT_ROOT / "results" / "feature_importance.csv"
+FIGURES_DIR = PROJECT_ROOT / "results" / "figures"
+FORECAST_PATH = PROJECT_ROOT / "outputs" / "forecast_2026-01.csv"
+TEST_PRED_PATH = PROJECT_ROOT / "outputs" / "test_predictions_2025.parquet"
 
 TIER_ORDER = ["Critical", "High", "Medium", "Low"]
 TIER_COLOURS = {"Critical": [208, 59, 59], "High": [236, 131, 90], "Medium": [250, 178, 25], "Low": [12, 163, 12]}
