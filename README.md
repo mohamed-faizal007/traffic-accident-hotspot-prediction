@@ -58,12 +58,20 @@ The base rate is about 2.3% of cell-months, so precision-recall metrics are repo
 
 ## Data and provenance
 
-- **Source:** UK Department for Transport road-safety collision data (STATS19-format collision records), as stated by the project owner.
-  The repository records **no URL, licence text or download date**; check the source's licence terms before redistributing.
+- **Source:** UK Department for Transport (DfT) — STATS19 Road Safety Data.
+- **Dataset page:** <https://www.data.gov.uk/dataset/cb7ae6f0-4be6-4935-9277-47e5ce24a11f/road-accidents-safety-data>
+  (also published at <https://www.gov.uk/government/statistics/road-safety-data>).
+- **Download tool:** the bespoke year range used here was obtained via the DfT custom-download tool,
+  <https://roadtraffic.dft.gov.uk/custom-downloads/road-accidents>.
+- **Licence:** UK Open Government Licence (OGL).
+- **Coverage:** personal injury road accidents in Great Britain reported to police and recorded via the STATS19 form.
 - **File used:** a single CSV, `data/raw/collisions_raw.csv` (44 columns, 513,801 rows; collisions per `collision_year`:
   2021: 101,087; 2022: 106,004; 2023: 104,258; 2024: 100,927; 2025: 101,525). Cleaning (`src/preprocessing.py`) keeps 513,748 rows after
   its steps (duplicate removal, coordinate validation, date parsing), and keeps the 18 columns listed in `src/config.py` plus a parsed `datetime`.
-- **Download date:** <fill in>
+- **Download date:** 10 September 2026 — **inferred, not logged.** The exact download was not recorded separately; this date is taken
+  from the file-system "Created" timestamp on `data/raw/collisions_raw.csv`. The file's Windows properties also show "This file came
+  from another computer", consistent with a browser download, which supports treating that timestamp as the download date, but it is
+  not a verified log entry.
 - **Not in git:** all of `data/` (raw, interim, processed), old pickled models, run logs and `results/val_scores.parquet` are git-ignored.
   See "Reproducibility" for what is versioned.
 
