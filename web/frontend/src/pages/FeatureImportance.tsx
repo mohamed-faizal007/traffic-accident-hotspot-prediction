@@ -37,6 +37,7 @@ export default function FeatureImportance() {
               contentStyle={{ background: "var(--color-bg-raised)", border: "1px solid var(--color-border)", borderRadius: 8 }}
               labelStyle={{ color: "var(--color-text-primary)" }}
               itemStyle={{ color: "var(--color-text-secondary)" }}
+              formatter={(value: number) => value.toFixed(4)}
             />
             <Bar dataKey="importance" name="importance" fill="var(--color-accent)" radius={[0, 4, 4, 0]} />
           </BarChart>
