@@ -1,0 +1,218 @@
+{
+  "protocol": "train targets 2021-2023 | validation targets 2024 | test targets 2025 (to be evaluated once, frozen)",
+  "selection": {
+    "model_family": "xgboost",
+    "model_params": {
+      "n_estimators": 300,
+      "max_depth": 4,
+      "learning_rate": 0.05
+    },
+    "candidate_best_params": {
+      "random_forest": {
+        "n_estimators": 150,
+        "max_depth": 8,
+        "min_samples_leaf": 20
+      },
+      "xgboost": {
+        "n_estimators": 300,
+        "max_depth": 4,
+        "learning_rate": 0.05
+      }
+    },
+    "decision": {
+      "ranking_by_val_mae": [
+        [
+          "xgboost",
+          0.23948292570984522
+        ],
+        [
+          "random_forest",
+          0.24855826451504484
+        ],
+        [
+          "historical_average_baseline",
+          0.2832541719684671
+        ]
+      ],
+      "top_two": [
+        "xgboost",
+        "random_forest"
+      ],
+      "top_two_mae_diff": {
+        "point_diff": -0.009075338805199618,
+        "ci95": [
+          -0.009408550953507717,
+          -0.00875141270500945
+        ],
+        "n_bootstrap": 300
+      },
+      "within_noise": false,
+      "chosen": "xgboost",
+      "reason": "top model clearly ahead of the runner-up"
+    },
+    "features": [
+      "grid_latitude",
+      "grid_longitude",
+      "month_sin",
+      "month_cos",
+      "collisions_lag_0",
+      "collisions_lag_1",
+      "collisions_lag_2",
+      "casualties_lag_0",
+      "collisions_rolling_sum_3",
+      "historical_total_collisions",
+      "historical_avg_collisions",
+      "historical_max_collisions",
+      "historical_collision_frequency",
+      "historical_hotspot_frequency",
+      "collisions_last_6_months",
+      "collisions_last_12_months",
+      "months_since_last_collision",
+      "historical_rush_hour_share",
+      "historical_weekend_share",
+      "historical_night_share",
+      "historical_adverse_weather_share",
+      "historical_wet_road_share",
+      "historical_single_carriageway_share",
+      "historical_high_speed_share"
+    ],
+    "target_transform": "log1p(next_month_collisions); metrics reported after expm1() inversion, clipped at 0",
+    "xgboost_retuning_note": "original XGB_GRID (depth {4,6} x lr {0.05,0.1}) picked a corner value on both dimensions; widened to depth {2,3,4,6,8} x lr {0.02,0.05,0.1} before freezing"
+  },
+  "validation": {
+    "n_train": 972416,
+    "n_val": 364656,
+    "all_candidates": {
+      "historical_average_baseline": {
+        "mae": 0.2832541719684671,
+        "rmse": 0.5114788736740647,
+        "r2": -0.16519407800104213,
+        "n": 364656,
+        "mean_actual": 0.17579307621429513
+      },
+      "random_forest": {
+        "mae": 0.24855826451504484,
+        "rmse": 0.437186995331935,
+        "r2": 0.14871037974249723,
+        "n": 364656,
+        "mean_actual": 0.17579307621429513
+      },
+      "xgboost": {
+        "mae": 0.23948292570984522,
+        "rmse": 0.4309087865529365,
+        "r2": 0.17298465477308111,
+        "n": 364656,
+        "mean_actual": 0.17579307621429513
+      }
+    },
+    "comparison_table": [
+      {
+        "model": "xgboost",
+        "mae": 0.23948292570984522,
+        "rmse": 0.4309087865529365,
+        "r2": 0.17298465477308111,
+        "n": 364656,
+        "mean_actual": 0.17579307621429513
+      },
+      {
+        "model": "random_forest",
+        "mae": 0.24855826451504484,
+        "rmse": 0.437186995331935,
+        "r2": 0.14871037974249723,
+        "n": 364656,
+        "mean_actual": 0.17579307621429513
+      },
+      {
+        "model": "historical_average_baseline",
+        "mae": 0.2832541719684671,
+        "rmse": 0.5114788736740647,
+        "r2": -0.16519407800104213,
+        "n": 364656,
+        "mean_actual": 0.17579307621429513
+      }
+    ],
+    "selection_decision": {
+      "ranking_by_val_mae": [
+        [
+          "xgboost",
+          0.23948292570984522
+        ],
+        [
+          "random_forest",
+          0.24855826451504484
+        ],
+        [
+          "historical_average_baseline",
+          0.2832541719684671
+        ]
+      ],
+      "top_two": [
+        "xgboost",
+        "random_forest"
+      ],
+      "top_two_mae_diff": {
+        "point_diff": -0.009075338805199618,
+        "ci95": [
+          -0.009408550953507717,
+          -0.00875141270500945
+        ],
+        "n_bootstrap": 300
+      },
+      "within_noise": false,
+      "chosen": "xgboost",
+      "reason": "top model clearly ahead of the runner-up"
+    },
+    "xgboost_edge_check": {
+      "original_grid_depths": [
+        4,
+        6
+      ],
+      "original_grid_lrs": [
+        0.05,
+        0.1
+      ],
+      "original_winner": {
+        "max_depth": 4,
+        "learning_rate": 0.05
+      },
+      "widened_grid_depths": [
+        2,
+        3,
+        4,
+        6,
+        8
+      ],
+      "widened_grid_lrs": [
+        0.02,
+        0.05,
+        0.1
+      ],
+      "widened_winner": {
+        "n_estimators": 300,
+        "max_depth": 4,
+        "learning_rate": 0.05
+      },
+      "widened_winner_still_on_edge": false
+    }
+  },
+  "test": {
+    "evaluated_at_utc": "2026-09-23T09:14:31+00:00",
+    "frozen_config_sha256": "096ff82b0eb0aba573fcc968835a757151b574be70fe614f4f5d956c5e7ceb14",
+    "model": "xgboost",
+    "xgboost": {
+      "mae": 0.28751829011114827,
+      "rmse": 0.46600953181970173,
+      "r2": 0.03767693275641326,
+      "n": 364656,
+      "mean_actual": 0.17637718836382782
+    },
+    "historical_average_baseline": {
+      "mae": 0.284435193716818,
+      "rmse": 0.5125741343790332,
+      "r2": -0.1642457740446519,
+      "n": 364656,
+      "mean_actual": 0.17637718836382782
+    },
+    "note": "evaluated once; nothing was tuned or changed after seeing these numbers"
+  }
+}
