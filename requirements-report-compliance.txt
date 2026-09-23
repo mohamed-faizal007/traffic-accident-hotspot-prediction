@@ -1,0 +1,7 @@
+# Additional dependencies for the additive "report-compliance" track only.
+# Root requirements.txt (the frozen classifier's dependency set) is left untouched.
+# Install with: pip install -r requirements-report-compliance.txt
+xgboost
+geopandas
+shapely
+folium
