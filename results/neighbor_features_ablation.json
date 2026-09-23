@@ -1,0 +1,161 @@
+{
+  "protocol": "Neighbor-cell feature ablation, classifier track. Validation (2024 targets) only; 2025 test set never touched. Same model family/params as the frozen classifier (results/metrics.json, read-only); no frozen/locked file written to.",
+  "params": {
+    "learning_rate": 0.03,
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 50
+  },
+  "feature_columns_without_neighbor": [
+    "grid_latitude",
+    "grid_longitude",
+    "month_sin",
+    "month_cos",
+    "collisions_lag_0",
+    "collisions_lag_1",
+    "collisions_lag_2",
+    "casualties_lag_0",
+    "collisions_rolling_sum_3",
+    "historical_total_collisions",
+    "historical_avg_collisions",
+    "historical_max_collisions",
+    "historical_collision_frequency",
+    "historical_hotspot_frequency",
+    "collisions_last_6_months",
+    "collisions_last_12_months",
+    "months_since_last_collision"
+  ],
+  "feature_columns_with_neighbor": [
+    "grid_latitude",
+    "grid_longitude",
+    "month_sin",
+    "month_cos",
+    "collisions_lag_0",
+    "collisions_lag_1",
+    "collisions_lag_2",
+    "casualties_lag_0",
+    "collisions_rolling_sum_3",
+    "historical_total_collisions",
+    "historical_avg_collisions",
+    "historical_max_collisions",
+    "historical_collision_frequency",
+    "historical_hotspot_frequency",
+    "collisions_last_6_months",
+    "collisions_last_12_months",
+    "months_since_last_collision",
+    "neighbor_avg_collisions_mean",
+    "neighbor_avg_collisions_max",
+    "neighbor_cell_count"
+  ],
+  "seeds": [
+    {
+      "seed": 42,
+      "ap_without_neighbor": 0.2498869759285054,
+      "top1_without_neighbor": 0.4342105263157895,
+      "top5_without_neighbor": 0.22209429824561402,
+      "ap_with_neighbor": 0.25051599424096,
+      "top1_with_neighbor": 0.4342105263157895,
+      "top5_with_neighbor": 0.22209429824561402
+    },
+    {
+      "seed": 0,
+      "ap_without_neighbor": 0.2507044144554609,
+      "top1_without_neighbor": 0.4311951754385965,
+      "top5_without_neighbor": 0.22143640350877192,
+      "ap_with_neighbor": 0.2520584652953586,
+      "top1_with_neighbor": 0.4350328947368421,
+      "top5_with_neighbor": 0.22149122807017543
+    },
+    {
+      "seed": 1,
+      "ap_without_neighbor": 0.2498293404341661,
+      "top1_without_neighbor": 0.4394188596491228,
+      "top5_without_neighbor": 0.22105263157894736,
+      "ap_with_neighbor": 0.2506872443961488,
+      "top1_with_neighbor": 0.4394188596491228,
+      "top5_with_neighbor": 0.22099780701754385
+    },
+    {
+      "seed": 2,
+      "ap_without_neighbor": 0.2493877432416386,
+      "top1_without_neighbor": 0.43585526315789475,
+      "top5_without_neighbor": 0.22088815789473684,
+      "ap_with_neighbor": 0.25181187819846895,
+      "top1_with_neighbor": 0.43530701754385964,
+      "top5_with_neighbor": 0.2205043859649123
+    },
+    {
+      "seed": 3,
+      "ap_without_neighbor": 0.25042446391868867,
+      "top1_without_neighbor": 0.43475877192982454,
+      "top5_without_neighbor": 0.22083333333333333,
+      "ap_with_neighbor": 0.2501223687631658,
+      "top1_with_neighbor": 0.4350328947368421,
+      "top5_with_neighbor": 0.2211622807017544
+    }
+  ],
+  "summary": {
+    "ap": {
+      "without_neighbor_mean": 0.2500465875956919,
+      "with_neighbor_mean": 0.25103919017882037,
+      "diff_mean": 0.000992602583128499,
+      "diff_sd_over_seeds": 0.0010008133260212676,
+      "seeds_where_neighbor_better": 4
+    },
+    "top1": {
+      "without_neighbor_mean": 0.43508771929824563,
+      "with_neighbor_mean": 0.43580043859649126,
+      "diff_mean": 0.0007127192982456121,
+      "diff_sd_over_seeds": 0.001772283977548753,
+      "seeds_where_neighbor_better": 2
+    },
+    "top5": {
+      "without_neighbor_mean": 0.22126096491228067,
+      "with_neighbor_mean": 0.22125,
+      "diff_mean": -1.0964912280697625e-05,
+      "diff_sd_over_seeds": 0.00025539067322044476,
+      "seeds_where_neighbor_better": 2
+    }
+  },
+  "bootstrap": {
+    "n_bootstrap": 300,
+    "unit": "grid (resampled with replacement)",
+    "comparisons": {
+      "hist_gradient_boosting_with_neighbor - hist_gradient_boosting": {
+        "ap": {
+          "point_diff": 0.0006290183124545989,
+          "ci95": [
+            -0.0008527087169700742,
+            0.0018624763220956837
+          ],
+          "share_of_resamples_positive": 0.72
+        },
+        "top_1pct": {
+          "point_diff": 0.0,
+          "ci95": [
+            -0.007238151464587334,
+            0.005920481752773954
+          ],
+          "share_of_resamples_positive": 0.49
+        },
+        "top_5pct": {
+          "point_diff": 0.0,
+          "ci95": [
+            -0.0022662137499385024,
+            0.002298444624972615
+          ],
+          "share_of_resamples_positive": 0.4866666666666667
+        }
+      }
+    },
+    "point_estimates": {
+      "hist_gradient_boosting|ap": 0.2498869759285054,
+      "hist_gradient_boosting|top_1pct": 0.4342105263157895,
+      "hist_gradient_boosting|top_5pct": 0.22209429824561402,
+      "hist_gradient_boosting_with_neighbor|ap": 0.25051599424096,
+      "hist_gradient_boosting_with_neighbor|top_1pct": 0.4342105263157895,
+      "hist_gradient_boosting_with_neighbor|top_5pct": 0.22209429824561402
+    }
+  },
+  "decision_rule": "neighbor features are a genuine finding only if the 95% grid-bootstrap CI of the validation AP difference (with_neighbor - without) excludes 0 on the positive side",
+  "neighbor_features_help": false
+}
