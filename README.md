@@ -257,6 +257,24 @@ Only Windows and Python 3.13.1 were tested.
   data were scored, and no lock or results were written. Only the loader in `evaluate_test.py` was fixed (a regression test was added); the frozen artefacts and hashes were untouched.
 - Test-set bootstrap CIs (`src/test_bootstrap.py`) were added after the evaluation as reporting on the saved predictions; they change no point metric.
 
+## Report-compliance track (DA1 proposal demonstration)
+
+Alongside the primary classification system above, an additive
+`report-compliance` track (`src/report_compliance/`, `tests/report_compliance/`,
+`results/regression/`, `outputs/report_compliance/`) was built to literally
+demonstrate every claim in the original DA1 proposal — regression models
+(historical-average baseline, Random Forest, XGBoost predicting collision
+count, evaluated once on 2025 under their own frozen config and lock file),
+a Folium interactive map, a GeoPandas/Shapely spatial-grid implementation
+proven equivalent to the production grid, explicit hour/day-of-week/weekend/
+time-of-day features, road-type/weather filtering, and quantile-based
+LOW/MEDIUM/HIGH risk tiers. It never modifies the frozen classifier, its
+config, metrics, lock file, model, or feature table. See
+[docs/report_compliance_checklist.md](docs/report_compliance_checklist.md)
+for the full claim-by-claim mapping to evidence, including an honest
+discussion of where this track's results are weaker than the primary
+classifier's.
+
 ## Future work
 
 - Refit on 2021-2024 with a fixed threshold/tier rule and re-evaluate on a later year.
