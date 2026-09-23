@@ -164,3 +164,22 @@ which we consider methodologically stronger for this task; the regression
 track's more modest test performance is itself an honest and informative
 result about the difficulty of the count-prediction framing at 500m grid
 resolution."
+
+---
+
+## Addendum: neighbor-cell feature ablation (`neighbor-features` branch)
+
+A follow-up, additive test of the "unmodeled spatial autocorrelation"
+limitation named in `README.md` (Limitations): does giving each grid cell
+its spatially-adjacent neighbors' collision history as a feature improve
+either track? Same pre-registered, bootstrap-CI discipline as the DBSCAN
+cluster ablation referenced in item 8 above. Short answer: **no, on both
+tracks** — a null result for the classifier (validation AP bootstrap CI
+`[-0.0009, +0.0019]`, includes 0) and a clear negative result for the
+regression track (validation MAE bootstrap CI `[+0.0036, +0.0040]`,
+excludes 0 on the worsening side, consistent across seeds). Neither result
+cleared the bar for spending either track's one-shot 2025 test evaluation.
+Full protocol and numbers: [`neighbor_features_ablation.md`](neighbor_features_ablation.md)
+(design rationale in [`neighbor_features_plan.md`](neighbor_features_plan.md));
+raw output: `results/neighbor_features_ablation.json` and
+`results/regression/neighbor_features_ablation.json`.
