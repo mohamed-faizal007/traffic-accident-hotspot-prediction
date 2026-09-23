@@ -16,8 +16,8 @@ data/interim/
 data/processed/
 
 # Models
-models/*.joblib
-models/*.pkl
+models/**/*.joblib
+models/**/*.pkl
 
 # Outputs
 outputs/maps/*.html
