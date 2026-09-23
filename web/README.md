@@ -63,7 +63,42 @@ To type-check and production-build:
 npm run build
 ```
 
-## Running both together
+## Running both together (recommended: one command)
+
+From the project root, in PowerShell:
+
+```powershell
+.\run-web.ps1
+```
+
+This starts the backend (uvicorn, without `--reload` — it's a demo
+launcher, not a dev-reload workflow) and the frontend (`npm run dev`) as
+two child processes of the same console, waits for both ports to open,
+then prints:
+
+```
+=================================================================
+  Backend  API :  http://localhost:8000   (docs at /docs)
+  Frontend App :  http://localhost:5173
+=================================================================
+```
+
+Press **Ctrl+C** in that terminal to stop both. The script's `finally`
+block force-stops both processes on Ctrl+C, so nothing is left listening
+on port 8000 or 5173 afterward — verified by starting it, confirming both
+ports respond, sending Ctrl+C, and checking `netstat -ano` shows neither
+port still `LISTENING`.
+
+Prerequisites (one-time): the Python venv set up (`Backend` section above)
+and `npm install` already run in `web/frontend` (`Frontend` section above).
+The script checks for both and exits with a clear message if either is
+missing, rather than starting half of the stack.
+
+### Fallback / troubleshooting: two terminals
+
+If `run-web.ps1` doesn't work in your shell (e.g. you're not on Windows,
+or you want `uvicorn --reload` for active backend development), run each
+side manually:
 
 ```bash
 # terminal 1
@@ -73,7 +108,8 @@ cd web/backend && ../../venv/Scripts/python.exe -m uvicorn app.main:app --reload
 cd web/frontend && npm run dev
 ```
 
-Then open `http://localhost:5173` in a browser.
+Then open `http://localhost:5173` in a browser. Stop each with Ctrl+C in
+its own terminal.
 
 ## Notes
 
