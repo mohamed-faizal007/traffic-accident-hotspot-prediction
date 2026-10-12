@@ -1,0 +1,11 @@
+{
+  "kind": "descriptive, not a model attribution",
+  "as_of_month": "2025-12",
+  "n_cells": 30388,
+  "percentile_definition": "percent of the modelled cells whose value is strictly lower",
+  "history_start": "2025-01",
+  "history_12m": "monthly collision counts 2025-01..2025-12, ';'-separated",
+  "history_vs_last12_feature_mismatches": 0,
+  "quantile_tier": "within-month terciles of the frozen classifier's Jan-2026 scores",
+  "generated_at_utc": "2026-10-12T14:23:18+00:00"
+}

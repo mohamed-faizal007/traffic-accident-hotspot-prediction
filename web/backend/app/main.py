@@ -6,13 +6,14 @@ outputs/test_predictions_2025.parquet). No write endpoints, no model loading, no
 training code is imported here.
 """
 
-import math
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from . import data
+from .insights import filter_frame, router as insights_router
 
 app = FastAPI(title="Hotspot Prediction API", version="1.0.0")
 
@@ -24,6 +25,26 @@ app.add_middleware(
 )
 
 
+app.include_router(insights_router)
+
+
+@app.exception_handler(data.DataFileError)
+async def _data_file_error(_: Request, exc: data.DataFileError):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
+@app.exception_handler(KeyError)
+@app.exception_handler(TypeError)
+@app.exception_handler(IndexError)
+@app.exception_handler(AttributeError)
+async def _unexpected_structure(_: Request, exc: Exception):
+    # A saved output parsed but lacks the fields the API expects (e.g. an empty or hand-edited file).
+    return JSONResponse(
+        status_code=503,
+        content={"detail": f"A saved output has an unexpected structure (missing {exc!s}). Re-generate it with the pipeline."},
+    )
+
+
 def _require_metrics() -> dict:
     metrics = data.load_metrics()
     if metrics is None:
@@ -31,15 +52,7 @@ def _require_metrics() -> dict:
     return metrics
 
 
-def _clean(obj):
-    """Replace NaN/inf (which json can't encode) with None, recursively."""
-    if isinstance(obj, float):
-        return obj if math.isfinite(obj) else None
-    if isinstance(obj, dict):
-        return {k: _clean(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_clean(v) for v in obj]
-    return obj
+_clean = data.clean
 
 
 @app.get("/api/summary")
@@ -91,7 +104,7 @@ def predictions(
         tier_list = [t for t in tiers.split(",") if t]
         shown = shown[shown["risk_tier"].isin(tier_list)]
     if grid_id:
-        shown = shown[shown["grid_id"].astype(str).str.contains(grid_id)]
+        shown = shown[shown["grid_id"].astype(str).str.contains(grid_id, regex=False)]
 
     total = len(shown)
     start = (page - 1) * page_size
@@ -108,12 +121,19 @@ def predictions(
     })
 
 
+DEFAULT_MAP_TIERS = ["Critical", "High", "Medium"]
+
+
 @app.get("/api/risk-map")
 def risk_map(
     source: str = Query("forecast", pattern="^(forecast|test)$"),
     month: Optional[str] = Query(None, description="YYYY-MM; defaults to the latest available"),
-    tiers: Optional[str] = Query(None, description="Comma-separated risk tiers"),
-    limit: int = Query(30000, ge=1, le=30000),
+    tiers: Optional[str] = Query(None, description="Comma-separated risk tiers; omitted = Critical,High,Medium; empty = none"),
+    road: Optional[str] = Query(None, pattern="^(single|other)$", description="forecast source only"),
+    weather: Optional[str] = Query(None, pattern="^(adverse|fine)$", description="forecast source only"),
+    min_adverse_share: Optional[float] = Query(None, ge=0, le=1, description="forecast source only"),
+    min_single_share: Optional[float] = Query(None, ge=0, le=1, description="forecast source only"),
+    limit: int = Query(5000, ge=1, le=30000),
 ):
     if source == "forecast":
         raw = data.load_forecast()
@@ -132,11 +152,21 @@ def risk_map(
     target_month = month if month in months else (months[-1] if months else None)
 
     view = df[df["month"] == target_month] if target_month else df.iloc[0:0]
-    if tiers:
-        tier_list = [t for t in tiers.split(",") if t]
-        view = view[view["risk_tier"].isin(tier_list)]
+    tier_list = DEFAULT_MAP_TIERS if tiers is None else [t for t in tiers.split(",") if t]
+    view = view[view["risk_tier"].isin(tier_list)]
 
-    truncated = len(view) > limit
+    filters_applied = False
+    has_share_filter = any(v is not None for v in (road, weather, min_adverse_share, min_single_share))
+    if has_share_filter and source == "forecast":
+        frame = data.action_frame()
+        if frame is None:
+            raise HTTPException(status_code=503, detail="Per-cell road/weather shares not found. Run src/dashboard_exports/forecast_cells.py.")
+        keep = filter_frame(frame, road=road, weather=weather, min_adverse_share=min_adverse_share, min_single_share=min_single_share)["grid_id"]
+        view = view[view["grid_id"].isin(set(keep))]
+        filters_applied = True
+
+    total_matching = len(view)
+    truncated = total_matching > limit
     if truncated:
         view = view.nlargest(limit, "score")
 
@@ -148,7 +178,11 @@ def risk_map(
         "source": source,
         "months": months,
         "month": target_month,
+        "tiers": tier_list,
+        "limit": limit,
+        "total_matching": total_matching,
         "truncated": truncated,
+        "road_weather_filters_applied": filters_applied,
         "count": len(view),
         "cells": view[cols].to_dict(orient="records"),
     })
@@ -257,6 +291,8 @@ def feature_importance():
     imp = data.load_feature_importance()
     if imp is None:
         raise HTTPException(status_code=503, detail="results/feature_importance.csv not found.")
+    if imp.empty or not {"feature", "importance", "std"}.issubset(imp.columns):
+        raise HTTPException(status_code=503, detail="results/feature_importance.csv is empty or lacks the expected columns.")
     return _clean({"rows": imp.to_dict(orient="records")})
 
 

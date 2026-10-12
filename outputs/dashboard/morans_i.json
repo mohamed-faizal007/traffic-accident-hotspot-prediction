@@ -1,0 +1,12 @@
+{
+  "morans_i": 0.4959013780378919,
+  "expected_under_randomness": -3.859364748562387e-05,
+  "p_value": 0.002,
+  "permutations": 499,
+  "n_cells_used": 25912,
+  "n_cells_without_modelled_neighbour": 4476,
+  "variable": "per-cell collision count, 2021-2023",
+  "weights": "queen contiguity, modelled neighbours only, row-standardised",
+  "interpretation": "Moran's I = 0.496 (expected -0.0000 if cells were independent; permutation p = 0.002): significant positive spatial autocorrelation, so neighbouring cells have similar collision counts and treating cells as independent understates uncertainty.",
+  "generated_at_utc": "2026-10-12T14:23:23+00:00"
+}

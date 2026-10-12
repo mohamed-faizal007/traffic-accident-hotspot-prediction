@@ -1,0 +1,22 @@
+{
+  "status": "unvalidated forecast (no outcomes yet)",
+  "target_month": "2026-01-01",
+  "n_cells": 30388,
+  "model": {
+    "family": "xgboost",
+    "params": {
+      "n_estimators": 300,
+      "max_depth": 4,
+      "learning_rate": 0.05
+    },
+    "training": "targets <= 2023-12, full training set (no class sampling; this is a regression, not a classifier)",
+    "file": "models/regression/final_model.joblib"
+  },
+  "target_transform": "log1p(next_month_collisions); metrics reported after expm1() inversion, clipped at 0",
+  "regression_config_sha256": "096ff82b0eb0aba573fcc968835a757151b574be70fe614f4f5d956c5e7ceb14",
+  "model_sha256_before_load": "0a83ed471aa24558f5a594c8c4f10b112af3349d8a7db164a906dd09525c9bc6",
+  "model_sha256_after_load": "0a83ed471aa24558f5a594c8c4f10b112af3349d8a7db164a906dd09525c9bc6",
+  "model_hash_matches_frozen_config": true,
+  "inputs": "unlabeled rows (features through 2025-12) + train rows (baseline fit only); 2025 test rows not read",
+  "generated_at_utc": "2026-10-12T14:23:15+00:00"
+}

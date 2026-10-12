@@ -84,3 +84,69 @@ def test_feature_importance():
     rows = res.json()["rows"]
     assert rows
     assert set(["feature", "importance", "std"]).issubset(rows[0].keys())
+
+
+# --- robustness: malformed / missing data files must give a clean 503, never a raw 500 ---
+
+import pytest
+
+from app import data
+
+safe_client = TestClient(app, raise_server_exceptions=False)
+
+
+def test_predictions_grid_id_is_a_literal_not_a_regex():
+    for needle in ["(", "[", "*", "\\"]:
+        res = client.get("/api/predictions", params={"grid_id": needle})
+        assert res.status_code == 200, needle
+        assert res.json()["total"] == 0
+
+
+def test_predictions_unknown_tier_and_far_page_are_empty_not_errors():
+    assert client.get("/api/predictions", params={"tiers": "Bogus"}).json()["total"] == 0
+    assert client.get("/api/predictions", params={"page": 999999}).json()["rows"] == []
+
+
+@pytest.mark.parametrize("content", ["{bad json", "", "{}", "[]", "null"])
+def test_malformed_metrics_returns_503_with_message(monkeypatch, tmp_path, content):
+    bad = tmp_path / "metrics.json"
+    bad.write_text(content)
+    monkeypatch.setattr(data, "METRICS_PATH", bad)
+    for url in ["/api/summary", "/api/model-performance"]:
+        res = safe_client.get(url)
+        assert res.status_code == 503, (url, content, res.text)
+        assert "detail" in res.json()
+        assert "Traceback" not in res.text
+
+
+def test_missing_metrics_returns_503(monkeypatch, tmp_path):
+    monkeypatch.setattr(data, "METRICS_PATH", tmp_path / "absent.json")
+    res = safe_client.get("/api/summary")
+    assert res.status_code == 503
+    assert "metrics.json" in res.json()["detail"]
+
+
+def test_corrupt_forecast_csv_returns_503(monkeypatch, tmp_path):
+    bad = tmp_path / "forecast.csv"
+    bad.write_text("a,b\n1,2\n")  # parses, but lacks the expected columns
+    monkeypatch.setattr(data, "FORECAST_PATH", bad)
+    for url in ["/api/predictions", "/api/risk-map?source=forecast"]:
+        res = safe_client.get(url)
+        assert res.status_code == 503, url
+        assert "Traceback" not in res.text
+
+
+def test_unparseable_parquet_returns_503(monkeypatch, tmp_path):
+    bad = tmp_path / "test_predictions.parquet"
+    bad.write_bytes(b"not a parquet file")
+    monkeypatch.setattr(data, "TEST_PRED_PATH", bad)
+    res = safe_client.get("/api/risk-map", params={"source": "test"})
+    assert res.status_code == 503
+    assert "PARQUET" in res.json()["detail"]
+
+
+def test_corrupt_feature_importance_returns_503(monkeypatch, tmp_path):
+    bad = tmp_path / "fi.csv"
+    bad.write_bytes(b"\x00\x01\x02")
+    monkeypatch.setattr(data, "IMPORTANCE_PATH", bad)
+    assert safe_client.get("/api/feature-importance").status_code in (503,)
