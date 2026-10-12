@@ -65,7 +65,7 @@ though its RMSE and R² are clearly better. Validation had suggested a
 larger, more one-sided win (MAE gap ~0.044 in XGBoost's favour) than
 materialized on test (~0.003 in the *baseline's* favour). This is a
 legitimate validation→test generalization gap on an extremely sparse
-target (83.8% of grid-months have zero collisions at 500m resolution;
+target (83.6% of labelled grid-months (all splits) have zero collisions at 500m resolution;
 mean actual ≈0.176 collisions/grid-month) — not an error, and exactly the
 kind of thing the "evaluate once, never re-tune after seeing test" rule
 exists to surface honestly rather than hide.

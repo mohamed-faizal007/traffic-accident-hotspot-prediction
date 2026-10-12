@@ -246,7 +246,7 @@ On a phone-width screen (390 px) the tables become cards and the navigation coll
 
 **Environment used:** Windows 11, Python 3.13.1, pandas 3.0.5, numpy 2.5.3, scipy 1.18.1, scikit-learn 1.9.0, pyarrow 25.0.1, pyproj 3.8.0,
 joblib 1.6.0, matplotlib 3.11.1, seaborn 0.13.2, streamlit 1.63.0, pydeck 0.9.3, pytest 9.1.1 (pinned in `requirements.txt`).
-The report-compliance track and the dashboard need two further requirements files (`requirements-report-compliance.txt`: xgboost, geopandas, shapely, folium, **not version-pinned**;
+The report-compliance track and the dashboard need two further requirements files (`requirements-report-compliance.txt`: xgboost, geopandas, shapely, folium, pinned to the installed versions for these direct dependencies only;
 `web/backend/requirements.txt`: fastapi, uvicorn, pandas, pyarrow, httpx, pytest as minimum versions) and Node.js 20+ for the frontend (v20.20.2 was used). Python 3.13.1 was used throughout.
 Random seeds are fixed (`RANDOM_STATE = 42`; multi-seed ablations use seeds 42, 0, 1, 2, 3). Bit-identical results on other platforms or library versions are not guaranteed.
 
@@ -260,7 +260,7 @@ pip install -r requirements.txt                          # classifier pipeline a
 pip install -r requirements-report-compliance.txt        # regression track, Folium map, GeoPandas grid
 pip install -r web/backend/requirements.txt              # FastAPI backend and its tests
 cd web/frontend ; npm install ; cd ../..                 # React frontend (Node.js 20+)
-python -m pytest tests -q                                # 78 root tests; 76 pass without data/ (see the clean-clone note below)
+python -m pytest tests -q                                # 78 root tests with data/ present; without data/: 76 passed, 2 skipped
 cd web/backend ; python -m pytest tests -q ; cd ../..   # 111 backend tests
 .\run-web.ps1                                            # primary dashboard on http://localhost:5173
 streamlit run legacy/streamlit_dashboard/app.py          # optional fallback dashboard
@@ -291,9 +291,9 @@ Only Windows and Python 3.13.1 were tested.
 
 **Latest clean-clone check (12 October 2026; Windows 11, Python 3.13.1, Node.js 20.20.2; the code and saved outputs of commit `abb1f44`, which the later documentation-only commit does not change):**
 a fresh `git clone` into a temporary folder, a new venv, all three requirements files and `npm install`, with no `data/` folder and no lock file touched.
-- Backend tests: **111 of 111 passed**. Root tests: **76 of 78 passed**; the other two are in `tests/report_compliance/test_grid_geopandas_equivalence.py`
-  (`test_exact_cell_id_match_on_full_dataset` fails and `test_exact_cell_id_match_on_real_data_sample` errors) because they read `data/interim/collisions_clean.csv`, which is git-ignored and absent in a clone.
-  They pass on a machine that has the data. They do not skip themselves when it is missing; that is a known gap, left as it is.
+- Backend tests: **111 of 111 passed**. Root tests: **76 of 78 passed**; the other two, in `tests/report_compliance/test_grid_geopandas_equivalence.py`
+  (`test_exact_cell_id_match_on_full_dataset` failed and `test_exact_cell_id_match_on_real_data_sample` errored), read `data/interim/collisions_clean.csv`, which is git-ignored and absent in a clone.
+  Both tests now skip with a clear reason when that file is missing; in a data-less copy of the tracked files the root suite gives **76 passed, 2 skipped**, and with the data present all **78 pass**.
 - `run-web.ps1` started both servers; all 16 API endpoints answered 200 and all page URLs (Home, Risk Map, Action list with and without a selected cell, the old `/predictions` redirect, both Patterns tabs,
   Regression track, Model Performance, Feature Importance) loaded with no browser console errors and no HTTP 4xx responses.
 - A real Ctrl+C in the script's console stopped both servers (`Stopped. Ports 8000 and 5173 should now be free.`); both ports were free within a few seconds.

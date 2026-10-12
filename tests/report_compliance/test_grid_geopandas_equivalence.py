@@ -13,12 +13,19 @@ from report_compliance.spatial_grid_geopandas import assign_grid_geopandas
 from config import CLEAN_COLLISIONS_PATH, GRID_SIZE_METERS
 
 
+requires_clean_data = pytest.mark.skipif(
+    not CLEAN_COLLISIONS_PATH.exists(),
+    reason="data/interim/collisions_clean.csv not found (data/ is git-ignored; regenerate it with the pipeline or place the file)",
+)
+
+
 @pytest.fixture(scope="module")
 def sample_points():
     df = pd.read_csv(CLEAN_COLLISIONS_PATH, low_memory=False, usecols=["longitude", "latitude"])
     return df.sample(n=20_000, random_state=42).reset_index(drop=True)
 
 
+@requires_clean_data
 def test_exact_cell_id_match_on_real_data_sample(sample_points):
     """Every one of 20,000 sampled real collision points must land in the
     identical grid_id under both implementations -- 0 mismatches, not a
@@ -33,6 +40,7 @@ def test_exact_cell_id_match_on_real_data_sample(sample_points):
     np.testing.assert_array_equal(frozen["grid_iy"].to_numpy(), geo["grid_iy"].to_numpy())
 
 
+@requires_clean_data
 def test_exact_cell_id_match_on_full_dataset():
     """Same check over the entire cleaned dataset (slower, run once)."""
     df = pd.read_csv(CLEAN_COLLISIONS_PATH, low_memory=False, usecols=["longitude", "latitude"])

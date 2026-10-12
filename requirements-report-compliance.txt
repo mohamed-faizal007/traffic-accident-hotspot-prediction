@@ -1,7 +1,9 @@
 # Additional dependencies for the additive "report-compliance" track only.
 # Root requirements.txt (the frozen classifier's dependency set) is left untouched.
+# Versions are the ones installed in the working venv (Python 3.13.1, Windows 11); only these direct
+# dependencies are pinned, their own dependencies (pyogrio, branca, ...) are resolved by pip.
 # Install with: pip install -r requirements-report-compliance.txt
-xgboost
-geopandas
-shapely
-folium
+xgboost==3.4.1
+geopandas==1.1.4
+shapely==2.1.2
+folium==0.20.0

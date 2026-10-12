@@ -86,8 +86,8 @@ side, consistently across all 3 seeds.
 this is not a null finding — it is a statistically clear **negative**
 finding: adding these neighbor features measurably hurts the regression
 model on every metric. Hypothesis: the regression target
-(`next_month_collisions`) is extremely sparse (83.8% of grid-months have
-zero collisions — see `docs/report_compliance_checklist.md` item 3); three
+(`next_month_collisions`) is extremely sparse (83.6% of labelled grid-months (all splits)
+have zero collisions — see `docs/report_compliance_checklist.md` item 3); three
 additional, comparatively noisy neighbor-derived columns likely gave
 XGBoost extra ways to fit variance without adding compensating signal, on a
 target where there is very little signal to find in the first place. Full

@@ -299,7 +299,7 @@ parallel).**
   AP-diff number that tells us something about whether neighbor
   autocorrelation matters *at all* for this data before spending a second
   round of compute finding out the same thing on the regression track's
-  much sparser target (83.8% zero grid-months, per the checklist) — if
+  much sparser target (83.6% zero labelled grid-months (all splits), per the checklist) — if
   neighbor features show no signal for the (denser, better-behaved)
   classification target, that's useful context before also testing them on
   the harder count-regression target.
