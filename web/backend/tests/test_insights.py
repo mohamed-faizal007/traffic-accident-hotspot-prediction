@@ -181,6 +181,7 @@ def test_regression_forecast_is_labelled_and_verified():
     body = client.get("/api/regression/forecast", params={"n": 10}).json()
     assert body["status"] == "unvalidated forecast (no outcomes yet)"
     assert body["model_hash_verified"] is True
+    assert isinstance(body["model"], str) and body["model"] == json.loads(data.REGRESSION_METRICS_PATH.read_text())["selection"]["model_family"]
     counts = [r["predicted_count_xgboost"] for r in body["rows"]]
     assert counts == sorted(counts, reverse=True) and len(counts) == 10
     assert body["total"] == len(pd.read_csv(data.FORECAST_PATH))

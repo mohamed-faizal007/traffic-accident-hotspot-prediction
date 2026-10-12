@@ -1,4 +1,6 @@
-import { api } from "../api";
+import { Link } from "react-router-dom";
+import { api, FOLIUM_MAP_URL } from "../api";
+import ExternalLink from "../components/ExternalLink";
 import HeroCanvas from "../components/HeroCanvas";
 import InfoCard from "../components/InfoCard";
 import MetricCard from "../components/MetricCard";
@@ -60,6 +62,20 @@ export default function Home() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-4">
+          <InfoCard tone="info">
+            <strong className="text-text-primary">Which cells should we prioritise next month?</strong> Open the{" "}
+            <Link className="text-accent underline-offset-2 hover:underline" to="/action-list">
+              Action list
+            </Link>{" "}
+            for the ranked cells and the facts behind each, or the{" "}
+            <Link className="text-accent underline-offset-2 hover:underline" to="/risk-map">
+              Risk map
+            </Link>{" "}
+            to see them on a map.
+            <div className="mt-3">
+              <ExternalLink href={FOLIUM_MAP_URL}>Open the Folium map</ExternalLink>
+            </div>
+          </InfoCard>
           <InfoCard tone="info">
             Average precision is {data.average_precision.toFixed(3)} versus {data.baseline_trailing12_average_precision.toFixed(3)}{" "}
             for simply ranking cells by their collisions in the last 12 months ({data.ap_gain_over_trailing12 >= 0 ? "+" : ""}

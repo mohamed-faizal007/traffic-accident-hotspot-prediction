@@ -260,12 +260,13 @@ def regression_results():
 def regression_forecast(n: int = Query(20, ge=1, le=500), offset: int = Query(0, ge=0)):
     df = _need(data.load_regression_forecast(), "outputs/regression_forecast_2026-01.csv", REGENERATE["regression_forecast"])
     meta = data.load_regression_forecast_meta() or {}
+    model = meta.get("model")
     rows = df.sort_values("rank").iloc[offset:offset + n]
     return data.clean({
         "status": meta.get("status", FORECAST_STATUS),
         "target_month": df["target_month"].iloc[0][:7] if len(df) else None,
         "total": int(len(df)),
-        "model": meta.get("model"),
+        "model": model.get("family") if isinstance(model, dict) else model,
         "model_hash_verified": meta.get("model_hash_matches_frozen_config"),
         "generated_at_utc": meta.get("generated_at_utc"),
         "rows": rows.to_dict(orient="records"),

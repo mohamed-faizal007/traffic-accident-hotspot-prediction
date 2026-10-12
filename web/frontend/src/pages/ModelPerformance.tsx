@@ -2,6 +2,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { api } from "../api";
 import DataTable, { type Column } from "../components/DataTable";
 import { ErrorState, LoadingState } from "../components/PageState";
+import { int } from "../format";
 import { useAsync } from "../hooks/useAsync";
 import type { ComparisonRow, ModelPerformance as ModelPerformanceData } from "../api";
 
@@ -26,7 +27,7 @@ function ConfusionMatrix({ conf }: { conf: ModelPerformanceData["confusion"] }) 
       className={`rounded-sm border border-border p-4 text-center ${correct ? "bg-accent/10" : "bg-card"}`}
     >
       <div className="text-xs text-text-secondary">{label}</div>
-      <div className="mt-1 font-display text-xl font-semibold text-text-primary">{value.toLocaleString()}</div>
+      <div className="mt-1 font-display text-xl font-semibold text-text-primary">{int(value)}</div>
     </div>
   );
   return (
@@ -62,7 +63,7 @@ export default function ModelPerformance() {
         <DataTable columns={comparisonColumns} rows={data.comparison_rows} rowKey={(r) => r.method} />
       </div>
       <p className="mt-3 text-xs text-text-muted">
-        Base rate {pct(data.base_rate, 2)} on {data.n.toLocaleString()} cell-months ({data.positives.toLocaleString()} hotspots).
+        Base rate {pct(data.base_rate, 2)} on {int(data.n)} cell-months ({int(data.positives)} hotspots).
         Top-k is taken within each month. Recall is on modelled cells.
       </p>
 
@@ -92,8 +93,8 @@ export default function ModelPerformance() {
             />
           </div>
           <p className="mt-2 text-xs text-text-muted">
-            {data.system_wide.coverage.in_modelled_grids.toLocaleString()} of{" "}
-            {data.system_wide.coverage.hotspot_grid_months_all_grids.toLocaleString()} hotspot cell-months (
+            {int(data.system_wide.coverage.in_modelled_grids)} of{" "}
+            {int(data.system_wide.coverage.hotspot_grid_months_all_grids)} hotspot cell-months (
             {pct(data.system_wide.coverage.coverage)}) lie in modelled cells.
           </p>
         </div>
@@ -130,7 +131,7 @@ export default function ModelPerformance() {
                 contentStyle={{ background: "var(--color-bg-raised)", border: "1px solid var(--color-border)", borderRadius: 8 }}
                 labelStyle={{ color: "var(--color-text-primary)" }}
                 itemStyle={{ color: "var(--color-text-secondary)" }}
-                formatter={(value: number) => value.toFixed(3)}
+                formatter={(value) => (typeof value === "number" ? value.toFixed(3) : String(value ?? ""))}
               />
               <Bar dataKey="ap" name="average precision" fill="var(--color-accent)" radius={[4, 4, 0, 0]} />
             </BarChart>
