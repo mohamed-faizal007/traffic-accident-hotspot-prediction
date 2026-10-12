@@ -25,7 +25,8 @@ these two relate.
 | **Evidence** | `src/report_compliance/train_validate_regression.py` (tuning), `src/report_compliance/retune_xgboost_widened.py` (edge-check re-tune before freezing), `models/regression/final_model.joblib` (frozen XGBoost), `results/regression/regression_frozen_config.json` (frozen hyperparameters + hashes), `results/regression/regression_comparison_table.csv` |
 | **Target** | `next_month_collisions` (raw count per grid), NOT the binary `hotspot` label the classifier uses |
 | **Chosen model** | XGBoost, `n_estimators=300, max_depth=4, learning_rate=0.05` — selected by the pre-registered rule ("top model clearly ahead of the runner-up" on validation MAE; bootstrap CI of the MAE gap vs Random Forest excluded 0) |
-| **Caveat** | This is a genuinely separate model from the classifier; it is not used by, and does not feed into, the classifier's predictions or dashboard. |
+| **Caveat** | This is a genuinely separate model from the classifier; it is not used by, and does not feed into, the classifier's predictions. The dashboard shows it on its own page. |
+| **Demo (React)** | **Regression track** page (`/regression-track`): validation (2024) and test (2025) tables for XGBoost, Random Forest and the historical-average baseline, with the MAE gap called out; the Jan 2026 predicted counts, labelled "unvalidated forecast (no outcomes yet)". API: `/api/regression/results`, `/api/regression/forecast`. Screenshots: `docs/screenshots/07-regression-comparison.png`, `08-regression-forecast.png`. |
 
 ## 2. Compared against a historical-average baseline
 
@@ -41,6 +42,7 @@ these two relate.
 |---|---|
 | **Status** | ✅ Done, both validation and test, all three candidates |
 | **Evidence** | `src/report_compliance/regression_evaluation.py::evaluate_regression()` (all metrics computed on the RAW COUNT scale after `expm1()` inversion); full numbers in `results/regression/regression_metrics.json` and `results/regression/regression_comparison_table.csv` |
+| **Demo (React)** | Same **Regression track** page, section *Model comparison*: MAE, RMSE and R² in separate, labelled validation and test tables (best value per metric marked). |
 
 **Validation (2024 targets), n=364,656:**
 
@@ -77,6 +79,7 @@ exists to surface honestly rather than hide.
 | **Grid-month features actually used by the regression model** | `src/report_compliance/grid_month_aggregates.py` — `historical_rush_hour_share`, `historical_weekend_share`, `historical_night_share` (cumulative, leakage-safe); these ARE in the frozen XGBoost model's feature list (see `results/regression/regression_frozen_config.json["features"]`) |
 | **Leakage tests** | `tests/report_compliance/test_grid_month_aggregates_leakage.py` — same synthetic-grid method as the classifier's own `tests/test_features_leakage.py` (future-months-don't-leak-back, current-month-does-affect-its-own-feature, hand-computed values, never-seen sentinel) |
 | **Caveat** | The FROZEN CLASSIFIER itself does not use any of these temporal features — it only ever used spatial + lag/rolling-count features and month sin/cos. Hour/day-of-week/weekend features exist only in the new regression track's feature set, by design (the classifier's feature set is frozen and untouched). |
+| **Demo (React)** | **Patterns** page, *Temporal patterns* tab (`/api/temporal-patterns`): hour × weekday heatmap, monthly seasonality by year, weekend vs weekday, time-of-day buckets and the clustered-vs-other hour profile, each with a generated takeaway. Screenshot: `docs/screenshots/05-patterns-temporal.png`. |
 
 ## 5. Folium for interactive mapping
 
@@ -86,6 +89,7 @@ exists to surface honestly rather than hide.
 | **Evidence** | `src/report_compliance/build_folium_map.py` → `outputs/report_compliance/hotspot_map.html` (2.7MB static export, open directly in a browser) |
 | **Content** | 1,849 markers (349 Critical / 1,000 High / 500 Medium, capped for legibility; Low tier excluded — same convention as the pre-existing `legacy/hotspot_map.py`). Each marker's popup shows the classifier's risk tier + probability, the new quantile tier, the new regression track's predicted count (XGBoost and baseline), and the actual 2025 count. |
 | **Caveat** | Shown ALONGSIDE the React dashboard (`web/frontend`), which remains primary — this does not replace it. Markers show each grid's single "peak risk month" of 2025 (highest classifier probability), not all 12 months per grid, to keep the map browsable. |
+| **Demo (React)** | The "Open the Folium map" link on Home, Risk Map and Action list opens the map (`/api/map/folium`, served by the backend) in a new tab. Screenshot: `docs/screenshots/13-folium-map.png`. The map loads its scripts and tiles from the internet. |
 
 ## 6. GeoPandas / Shapely for spatial processing
 
@@ -100,10 +104,11 @@ exists to surface honestly rather than hide.
 
 | | |
 |---|---|
-| **Status** | ✅ Done in the Folium map; ❌ NOT added to the React dashboard |
+| **Status** | ✅ Done in the Folium map **and** in the React dashboard (Action list and Risk Map) |
 | **Evidence** | `outputs/report_compliance/hotspot_map.html`'s `TagFilterButton` control, with tags `Road: Single carriageway` / `Road: Other road type` and `Weather: Adverse-weather prone` / `Weather: Predominantly fine weather`, derived from `historical_single_carriageway_share` / `historical_adverse_weather_share` (`src/report_compliance/grid_month_aggregates.py`) |
 | **Column verification** | Confirmed against the actual cleaned data (not assumed): `road_type`, `weather_conditions`, `road_surface_conditions`, `speed_limit` all present in `data/interim/collisions_clean.csv`; value distributions cross-checked against the documented DfT STATS19 schema before choosing coarse, defensible binary splits (dominant category vs "other"), rather than betting correctness on every rare code |
-| **Caveat** | The original plan said "Folium map **and/or** React dashboard" — only the Folium map got this filter. If the viva wants it in React too, that is unbuilt scope, not a broken claim. |
+| **Demo (React)** | **Action list** and **Risk Map**: Road type (any / single carriageway / other) and Weather (any / top 10% adverse-weather share / Folium rule) filters, with the matching-cell count and the cut-off shown. API: `/api/action-list`, `/api/risk-map` (`road`, `weather`, `min_adverse_share`). Screenshot: `docs/screenshots/04-risk-map-filtered.png`. |
+| **Caveat** | The React filters use the same leakage-safe grid-month shares as the Folium tags and apply to the Jan 2026 forecast only (not to the 2025 retrospective, where shares up to the latest month would not be leakage-safe). They offer the Folium rule (share above 0.5) and a data-derived "top 10% of cells by adverse-weather share" preset, because the Folium cut-off tags few cells; the UI states that the Folium map uses a stricter cut-off. |
 
 ## 8. LOW/MEDIUM/HIGH risk tiers via quantile thresholds
 
@@ -112,6 +117,7 @@ exists to surface honestly rather than hide.
 | **Status** | ✅ Done, shown alongside the existing system |
 | **Evidence** | `src/report_compliance/quantile_tiers.py` (per-month terciles, 33rd/66th percentile) → `results/regression/quantile_tiers_2025.parquet`; also surfaced in the Folium map's popups and filter tags |
 | **Tests** | `tests/report_compliance/test_quantile_tiers.py` — tercile balance, per-month independence, monotonicity with score, and a byte-for-byte check that reading the frozen classifier's predictions never mutates that source file |
+| **Demo (React)** | **Regression track** page, section *Quantile tiers* (`/api/quantile-tiers`): LOW/MEDIUM/HIGH next to the four rank tiers, observed hotspot rate per tier, the 4-tier × 3-tier crosstab and the Jan 2026 cell counts; the Action list shows each cell's tercile. Screenshot: `docs/screenshots/09-regression-tiers.png`. |
 | **Caveat** | This is explicitly an ALTERNATE categorization next to the classifier's real, validated rank-based 4-tier system (Critical/High/Medium/Low, `src/evaluation.py::assign_tiers`) — it is not used for any operational decision, and it recomputes tiers from the classifier's own already-frozen scores, not a new model. |
 
 ---
@@ -123,7 +129,7 @@ exists to surface honestly rather than hide.
 | Regression track's own pre-registered selection rule, written and hashed BEFORE any tuning | `results/regression/regression_frozen_config.json` (`written_at_utc` in the registration step precedes `frozen_at_utc`) |
 | Regression track's own frozen config + one-shot test lock, entirely separate from the classifier's | `results/regression/regression_frozen_config.json` / `results/regression/regression_test_evaluated.lock` — distinct paths from `results/frozen_config.json` / `results/test_evaluated.lock`, verified by hash at every step |
 | Zero modification to any frozen classifier file, at every phase | `results/frozen_config.json`, `results/metrics.json`, `results/test_evaluated.lock`, `models/final_model.joblib`, `models/calibrator.joblib`, `data/processed/ml_features.parquet`, `data/processed/grid_monthly_collisions.csv` all confirmed byte-identical (md5) before and after every phase of this work |
-| Full test suite | 58/58 passing (41 pre-existing classifier tests + 17 new report-compliance tests) |
+| Full test suite | 78/78 root tests passing (46 classifier tests including 5 neighbour-feature leakage tests, 17 report-compliance tests, 15 dashboard-export tests) and 111 backend API tests |
 
 ---
 

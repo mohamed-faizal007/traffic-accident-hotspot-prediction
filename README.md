@@ -87,7 +87,8 @@ raw CSV -> preprocessing -> collisions_clean.csv
         -> validation_comparison (cluster ablation, bootstrap CIs)
         -> freeze_config   (tests must pass; hashes)       -> results/frozen_config.json
         -> evaluate_test   (once; lock file)               -> metrics.json[test], outputs/*
-        -> web/            (React + FastAPI; reads metrics.json + outputs; primary dashboard)
+        -> dashboard_exports (read-only scripts: Jan-2026 regression forecast, per-cell drivers, clusters, temporal patterns, Moran's I) -> outputs/dashboard/
+        -> web/            (React + FastAPI; reads only tracked results/ and outputs/; primary dashboard)
         -> legacy/streamlit_dashboard/app.py  (Streamlit; same data; kept as a fallback)
 ```
 
@@ -101,7 +102,9 @@ raw CSV -> preprocessing -> collisions_clean.csv
 | Metrics | `src/evaluation.py` |
 | Training / selection | `src/train_validate.py`, `src/validation_comparison.py` |
 | Freeze / test | `src/freeze_config.py`, `src/evaluate_test.py`, `src/test_bootstrap.py` |
-| Tests | `tests/` |
+| Dashboard exports | `src/dashboard_exports/` (read-only; write `outputs/dashboard/*` and `outputs/regression_forecast_2026-01.*`) |
+| Web dashboard | `web/backend/` (FastAPI), `web/frontend/` (React) |
+| Tests | `tests/` (78 tests), `web/backend/tests/` (111 tests) |
 | Old pipeline | `legacy/` (not used, except `legacy/streamlit_dashboard/` - see Dashboard section), `results/old_run/` (old outputs) |
 
 ## Method details
@@ -173,46 +176,97 @@ improve prediction and are not used in the final model.**
 
 ## Dashboard
 
-**Primary interface: `web/`** (React + FastAPI). Five pages - Home, Hotspot Predictions, Risk Map,
-Model Performance, Feature Importance - mirroring the same data as the pipeline's saved outputs.
-Setup and run instructions: [`web/README.md`](web/README.md). Quick start:
+**Primary interface: `web/`** (React + FastAPI), seven pages. Quick start on Windows, from the project root:
 
 ```
-cd web/backend && ../../venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000   # terminal 1
-cd web/frontend && npm install && npm run dev                                                    # terminal 2
+.\run-web.ps1        # backend on :8000, frontend on :5173; Ctrl+C stops both
 ```
 
-Then open `http://localhost:5173`.
+then open `http://localhost:5173`. Setup, the endpoint list and the two-terminal fallback are in [`web/README.md`](web/README.md);
+a five-minute click-by-click demo with likely examiner questions is in [`docs/demo_script.md`](docs/demo_script.md).
 
-Pages: Home, Hotspot Predictions (Jan 2026 forecast, filters), Risk Map (forecast or 2025 retrospective,
-tier colours, actual hotspots as rings), Model Performance (test vs baselines, recall on modelled cells and system-wide, confusion matrix, calibration,
-per-month AP, validation, bootstrap CIs, ablations), Feature Importance (permutation importance on validation).
-All numbers come from `results/metrics.json` or saved outputs; the backend has no model-loading or training code and exposes read-only GET endpoints only.
+| Page | What it shows |
+|---|---|
+| Home | Headline 2025 result, coverage ceiling, limitations, links |
+| Risk Map | Forecast or 2025 retrospective on a map; tier chips; road-type and weather filters; link to the Folium map |
+| Action list | The cells to prioritise in the forecast month: tier, estimated probability, predicted collision count, 12-month sparkline, descriptive drivers, cell detail panel, road/weather filters |
+| Patterns | Temporal patterns (hour x weekday, seasonality, weekend, time of day) and DBSCAN clusters (map, parameter sweep, statistics, Moran's I) |
+| Regression track | Count regression against a historical-average baseline (validation and test), the Jan 2026 count forecast, LOW/MEDIUM/HIGH quantile tiers next to the 4 rank tiers, and the three ablations |
+| Model Performance | Test results against baselines, recall on modelled cells and system-wide, confusion matrix, calibration, per-month AP, validation, bootstrap CIs |
+| Feature Importance | Permutation importance on 2024 validation |
+
+Every number in the UI is read from `results/metrics.json`, the other saved outputs under `results/` and `outputs/`, or the small exports in `outputs/dashboard/`; none is hard-coded.
+The backend exposes read-only GET endpoints only, imports no model or training code, and reads no file under `data/` or `models/` (tests enforce this).
+A missing or malformed output gives a clear 503 message in the affected view instead of a crash.
+
+**Forecast status.** The Jan 2026 forecasts (the classifier's tiers and probabilities, and the regression track's predicted counts) are produced from data through Dec 2025 with the frozen models.
+There are no outcomes for that month yet, so they are **unvalidated**, and the UI labels them "unvalidated forecast (no outcomes yet)".
+The "drivers" in the Action list are descriptive facts about each cell's own history (12-month count, long-run average, months since the last collision, with percentiles among modelled cells); they are **not** a model attribution.
+Both dashboards say "score" and "risk tier", and "estimated probability" only for calibrated values.
 
 **Fallback: the original Streamlit dashboard** is retained, unmodified in behaviour, at `legacy/streamlit_dashboard/app.py` (run with
 `streamlit run legacy/streamlit_dashboard/app.py` from the project root). `tests/test_dashboard.py` runs every page and checks displayed
-numbers against `metrics.json`. Both dashboards say "score" and "risk tier", and "estimated probability" only for calibrated values.
-The Jan 2026 forecast is produced with the frozen model from data through Dec 2025 and has no outcome data, so it is unvalidated.
+numbers against `metrics.json`.
+
+### Screenshots
+
+Taken at 1280 px wide from the running dashboard (see [`docs/screenshots/`](docs/screenshots/)).
+
+![Home: headline result, coverage ceiling and limitations](docs/screenshots/01-home.png)
+
+![Action list: the cells to prioritise in January 2026, with probability, predicted count and a 12-month sparkline](docs/screenshots/02-action-list.png)
+
+![Cell detail: probability, predicted counts, monthly history, descriptive drivers, road and weather profile](docs/screenshots/03-cell-detail.png)
+
+![Risk Map filtered to single-carriageway cells in the top 10% of adverse-weather share](docs/screenshots/04-risk-map-filtered.png)
+
+![Patterns, temporal tab: hour by weekday heatmap, seasonality, weekend, time of day, clustered vs other hours](docs/screenshots/05-patterns-temporal.png)
+
+![Patterns, DBSCAN tab: cluster map, statistics, parameter sweep and Moran's I](docs/screenshots/06-patterns-clusters.png)
+
+![Regression track: model comparison on validation and test, with the MAE gap called out](docs/screenshots/07-regression-comparison.png)
+
+![Regression track: January 2026 predicted counts, labelled unvalidated](docs/screenshots/08-regression-forecast.png)
+
+![Regression track: LOW/MEDIUM/HIGH quantile tiers next to the four rank tiers](docs/screenshots/09-regression-tiers.png)
+
+![Regression track: the three ablations with their intervals](docs/screenshots/10-regression-ablations.png)
+
+![Model Performance](docs/screenshots/11-model-performance.png)
+
+![Feature Importance](docs/screenshots/12-feature-importance.png)
+
+![The Folium map, opened from the dashboard link](docs/screenshots/13-folium-map.png)
+
+On a phone-width screen (390 px) the tables become cards and the navigation collapses into a menu:
+
+<img src="docs/screenshots/14-action-list-390.png" alt="Action list at 390 px wide" width="260">
 
 ## Reproducibility
 
 **Environment used:** Windows 11, Python 3.13.1, pandas 3.0.5, numpy 2.5.3, scipy 1.18.1, scikit-learn 1.9.0, pyarrow 25.0.1, pyproj 3.8.0,
 joblib 1.6.0, matplotlib 3.11.1, seaborn 0.13.2, streamlit 1.63.0, pydeck 0.9.3, pytest 9.1.1 (pinned in `requirements.txt`).
+The report-compliance track and the dashboard need two further requirements files (`requirements-report-compliance.txt`: xgboost, geopandas, shapely, folium, **not version-pinned**;
+`web/backend/requirements.txt`: fastapi, uvicorn, pandas, pyarrow, httpx, pytest as minimum versions) and Node.js 20+ for the frontend (v20.20.2 was used). Python 3.13.1 was used throughout.
 Random seeds are fixed (`RANDOM_STATE = 42`; multi-seed ablations use seeds 42, 0, 1, 2, 3). Bit-identical results on other platforms or library versions are not guaranteed.
 
-**Commands from a clean clone:**
+**Commands from a clean clone** (Windows PowerShell; `main` has everything described in this README):
 
 ```
-git clone <repo-url> && cd <repo>
-git checkout final-audited
+git clone <repo-url> ; cd <repo>
 python -m venv venv
-venv\Scripts\activate                      # Windows; on Linux/macOS: source venv/bin/activate
-pip install -r requirements.txt
-# place the raw file (not in git) at data/raw/collisions_raw.csv
-python -m pytest tests -q                   # leakage, split, tier, selection-rule, dashboard tests
-streamlit run legacy/streamlit_dashboard/app.py   # fallback dashboard; reads results/metrics.json and outputs/ (both are in git)
-# primary dashboard: see web/README.md (FastAPI backend + React frontend)
+venv\Scripts\activate                                  # on Linux/macOS: source venv/bin/activate
+pip install -r requirements.txt                          # classifier pipeline and the legacy Streamlit app
+pip install -r requirements-report-compliance.txt        # regression track, Folium map, GeoPandas grid
+pip install -r web/backend/requirements.txt              # FastAPI backend and its tests
+cd web/frontend ; npm install ; cd ../..                 # React frontend (Node.js 20+)
+python -m pytest tests -q                                # 78 root tests; 76 pass without data/ (see the clean-clone note below)
+cd web/backend ; python -m pytest tests -q ; cd ../..   # 111 backend tests
+.\run-web.ps1                                            # primary dashboard on http://localhost:5173
+streamlit run legacy/streamlit_dashboard/app.py          # optional fallback dashboard
 ```
+
+The raw file (not in git) is only needed to regenerate data: place it at `data/raw/collisions_raw.csv`. The dashboard reads only files that are in git.
 
 To regenerate the intermediate data and validation results from the raw file (`python run_pipeline.py`, or its stages one by one):
 preprocessing, grid, monthly table, DBSCAN, features, `train_validate.py`, `validation_comparison.py`.
@@ -232,8 +286,17 @@ the original 2025 evaluation must not be repeated.
 **Verification status (observed):** a clean-clone test was run: a fresh clone of `final-audited`, a new venv, `pip install -r requirements.txt`, and the raw file placed as above.
 `python run_pipeline.py` first failed in preprocessing because `data/interim/` did not exist (fixed since by `ensure_output_dirs`, verified by a regression test, not by a second clean-clone run).
 After creating that folder by hand in the clone, the preprocess, grid, monthly, dbscan and features stages ran, and the regenerated `ml_features.parquet` was byte-identical to the hash in `frozen_config.json`.
-The train stage was refused by the lock file, as designed, so training, validation and test were **not** re-run. In the clone, 36 tests passed with no data files present, and the dashboard returned HTTP 200.
+The train stage was refused by the lock file, as designed, so training, validation and test were **not** re-run. In the clone, 36 tests passed with no data files present, and the dashboard returned HTTP 200. (That was the suite at the time; it has since grown, see above.)
 Only Windows and Python 3.13.1 were tested.
+
+**Latest clean-clone check (12 October 2026; Windows 11, Python 3.13.1, Node.js 20.20.2; the code and saved outputs of commit `abb1f44`, which the later documentation-only commit does not change):**
+a fresh `git clone` into a temporary folder, a new venv, all three requirements files and `npm install`, with no `data/` folder and no lock file touched.
+- Backend tests: **111 of 111 passed**. Root tests: **76 of 78 passed**; the other two are in `tests/report_compliance/test_grid_geopandas_equivalence.py`
+  (`test_exact_cell_id_match_on_full_dataset` fails and `test_exact_cell_id_match_on_real_data_sample` errors) because they read `data/interim/collisions_clean.csv`, which is git-ignored and absent in a clone.
+  They pass on a machine that has the data. They do not skip themselves when it is missing; that is a known gap, left as it is.
+- `run-web.ps1` started both servers; all 16 API endpoints answered 200 and all page URLs (Home, Risk Map, Action list with and without a selected cell, the old `/predictions` redirect, both Patterns tabs,
+  Regression track, Model Performance, Feature Importance) loaded with no browser console errors and no HTTP 4xx responses.
+- A real Ctrl+C in the script's console stopped both servers (`Stopped. Ports 8000 and 5173 should now be free.`); both ports were free within a few seconds.
 
 ## Limitations
 
@@ -256,6 +319,9 @@ Only Windows and Python 3.13.1 were tested.
 - The first attempt at `evaluate_test.py` crashed while unpickling the calibrator (its class was recorded as `__main__.PlattCalibrator`), before any 2025
   data were scored, and no lock or results were written. Only the loader in `evaluate_test.py` was fixed (a regression test was added); the frozen artefacts and hashes were untouched.
 - Test-set bootstrap CIs (`src/test_bootstrap.py`) were added after the evaluation as reporting on the saved predictions; they change no point metric.
+- The January 2026 count forecast (`outputs/regression_forecast_2026-01.csv`) was produced by loading the frozen regression model for **inference only**, on rows without outcomes, after checking the model file's SHA-256 against its frozen configuration before and after loading.
+  The 2025 test rows were not read, the regression lock file and frozen configuration were not touched, and `evaluate_regression_test.py` was not run again.
+- The dashboard exports in `outputs/dashboard/` are read-only summaries of existing data and saved outputs; no frozen artefact was modified (the hashes of the frozen files were checked before and after each stage of this work).
 
 ## Report-compliance track (DA1 proposal demonstration)
 
@@ -271,7 +337,7 @@ time-of-day features, road-type/weather filtering, and quantile-based
 LOW/MEDIUM/HIGH risk tiers. It never modifies the frozen classifier, its
 config, metrics, lock file, model, or feature table. See
 [docs/report_compliance_checklist.md](docs/report_compliance_checklist.md)
-for the full claim-by-claim mapping to evidence, including an honest
+for the full claim-by-claim mapping to evidence (the track's results are now also shown in the React dashboard: Regression track, Patterns, Action list and Risk Map), including an honest
 discussion of where this track's results are weaker than the primary
 classifier's.
 
